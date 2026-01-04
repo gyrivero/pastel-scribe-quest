@@ -1,96 +1,130 @@
+@import url('https://fonts.googleapis.com/css2?family=Crimson+Pro:ital,wght@0,400;0,500;0,600;0,700;1,400&family=Inter:wght@300;400;500;600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
-/* Definition of the design system. All colors, gradients, fonts, etc should be defined here. 
-All colors MUST be HSL.
-*/
+/* Fantasy Pastel Design System */
 
 @layer base {
   :root {
-    --background: 0 0% 100%;
-    --foreground: 222.2 84% 4.9%;
+    /* Warm cream background */
+    --background: 40 33% 97%;
+    --foreground: 250 25% 20%;
 
-    --card: 0 0% 100%;
-    --card-foreground: 222.2 84% 4.9%;
+    /* Soft lavender cards */
+    --card: 270 30% 97%;
+    --card-foreground: 250 25% 20%;
 
-    --popover: 0 0% 100%;
-    --popover-foreground: 222.2 84% 4.9%;
+    --popover: 270 30% 97%;
+    --popover-foreground: 250 25% 20%;
 
-    --primary: 222.2 47.4% 11.2%;
-    --primary-foreground: 210 40% 98%;
+    /* Soft sage green primary */
+    --primary: 150 25% 45%;
+    --primary-foreground: 0 0% 100%;
 
-    --secondary: 210 40% 96.1%;
-    --secondary-foreground: 222.2 47.4% 11.2%;
+    /* Warm blush secondary */
+    --secondary: 350 40% 92%;
+    --secondary-foreground: 350 30% 35%;
 
-    --muted: 210 40% 96.1%;
-    --muted-foreground: 215.4 16.3% 46.9%;
+    /* Muted lavender */
+    --muted: 270 20% 94%;
+    --muted-foreground: 250 15% 45%;
 
-    --accent: 210 40% 96.1%;
-    --accent-foreground: 222.2 47.4% 11.2%;
+    /* Soft gold accent */
+    --accent: 45 60% 85%;
+    --accent-foreground: 45 50% 25%;
 
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
+    /* Soft rose for destructive */
+    --destructive: 0 55% 65%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 214.3 31.8% 91.4%;
-    --input: 214.3 31.8% 91.4%;
-    --ring: 222.2 84% 4.9%;
+    --border: 270 15% 88%;
+    --input: 270 15% 88%;
+    --ring: 150 25% 45%;
 
-    --radius: 0.5rem;
+    --radius: 1rem;
 
-    --sidebar-background: 0 0% 98%;
+    /* Custom fantasy colors */
+    --fantasy-lavender: 270 40% 85%;
+    --fantasy-sage: 150 25% 75%;
+    --fantasy-blush: 350 50% 88%;
+    --fantasy-gold: 45 70% 75%;
+    --fantasy-cream: 40 40% 95%;
+    --fantasy-mist: 220 30% 92%;
 
-    --sidebar-foreground: 240 5.3% 26.1%;
+    /* Gradients */
+    --gradient-hero: linear-gradient(135deg, hsl(270 40% 85%) 0%, hsl(350 50% 88%) 50%, hsl(45 70% 75%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(270 30% 97%) 0%, hsl(270 20% 94%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(150 25% 45%) 0%, hsl(150 30% 55%) 100%);
 
-    --sidebar-primary: 240 5.9% 10%;
+    /* Shadows */
+    --shadow-soft: 0 4px 20px -4px hsl(270 30% 50% / 0.1);
+    --shadow-card: 0 8px 32px -8px hsl(270 30% 50% / 0.15);
+    --shadow-glow: 0 0 20px hsl(150 25% 45% / 0.2);
 
-    --sidebar-primary-foreground: 0 0% 98%;
-
-    --sidebar-accent: 240 4.8% 95.9%;
-
-    --sidebar-accent-foreground: 240 5.9% 10%;
-
-    --sidebar-border: 220 13% 91%;
-
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --sidebar-background: 270 30% 97%;
+    --sidebar-foreground: 250 25% 20%;
+    --sidebar-primary: 150 25% 45%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 270 20% 94%;
+    --sidebar-accent-foreground: 250 25% 20%;
+    --sidebar-border: 270 15% 88%;
+    --sidebar-ring: 150 25% 45%;
   }
 
   .dark {
-    --background: 222.2 84% 4.9%;
-    --foreground: 210 40% 98%;
+    --background: 250 25% 10%;
+    --foreground: 40 33% 95%;
 
-    --card: 222.2 84% 4.9%;
-    --card-foreground: 210 40% 98%;
+    --card: 250 20% 14%;
+    --card-foreground: 40 33% 95%;
 
-    --popover: 222.2 84% 4.9%;
-    --popover-foreground: 210 40% 98%;
+    --popover: 250 20% 14%;
+    --popover-foreground: 40 33% 95%;
 
-    --primary: 210 40% 98%;
-    --primary-foreground: 222.2 47.4% 11.2%;
+    --primary: 150 35% 50%;
+    --primary-foreground: 250 25% 10%;
 
-    --secondary: 217.2 32.6% 17.5%;
-    --secondary-foreground: 210 40% 98%;
+    --secondary: 350 25% 20%;
+    --secondary-foreground: 350 40% 85%;
 
-    --muted: 217.2 32.6% 17.5%;
-    --muted-foreground: 215 20.2% 65.1%;
+    --muted: 250 15% 20%;
+    --muted-foreground: 250 10% 60%;
 
-    --accent: 217.2 32.6% 17.5%;
-    --accent-foreground: 210 40% 98%;
+    --accent: 45 40% 25%;
+    --accent-foreground: 45 60% 85%;
 
-    --destructive: 0 62.8% 30.6%;
-    --destructive-foreground: 210 40% 98%;
+    --destructive: 0 50% 40%;
+    --destructive-foreground: 0 0% 100%;
 
-    --border: 217.2 32.6% 17.5%;
-    --input: 217.2 32.6% 17.5%;
-    --ring: 212.7 26.8% 83.9%;
-    --sidebar-background: 240 5.9% 10%;
-    --sidebar-foreground: 240 4.8% 95.9%;
-    --sidebar-primary: 224.3 76.3% 48%;
-    --sidebar-primary-foreground: 0 0% 100%;
-    --sidebar-accent: 240 3.7% 15.9%;
-    --sidebar-accent-foreground: 240 4.8% 95.9%;
-    --sidebar-border: 240 3.7% 15.9%;
-    --sidebar-ring: 217.2 91.2% 59.8%;
+    --border: 250 15% 22%;
+    --input: 250 15% 22%;
+    --ring: 150 35% 50%;
+
+    --fantasy-lavender: 270 25% 25%;
+    --fantasy-sage: 150 20% 25%;
+    --fantasy-blush: 350 25% 22%;
+    --fantasy-gold: 45 40% 25%;
+    --fantasy-cream: 40 20% 15%;
+    --fantasy-mist: 220 20% 18%;
+
+    --gradient-hero: linear-gradient(135deg, hsl(270 25% 25%) 0%, hsl(350 25% 22%) 50%, hsl(45 40% 25%) 100%);
+    --gradient-card: linear-gradient(180deg, hsl(250 20% 14%) 0%, hsl(250 15% 12%) 100%);
+    --gradient-accent: linear-gradient(135deg, hsl(150 35% 50%) 0%, hsl(150 40% 40%) 100%);
+
+    --shadow-soft: 0 4px 20px -4px hsl(0 0% 0% / 0.3);
+    --shadow-card: 0 8px 32px -8px hsl(0 0% 0% / 0.4);
+    --shadow-glow: 0 0 20px hsl(150 35% 50% / 0.3);
+
+    --sidebar-background: 250 20% 12%;
+    --sidebar-foreground: 40 33% 95%;
+    --sidebar-primary: 150 35% 50%;
+    --sidebar-primary-foreground: 250 25% 10%;
+    --sidebar-accent: 250 15% 20%;
+    --sidebar-accent-foreground: 40 33% 95%;
+    --sidebar-border: 250 15% 22%;
+    --sidebar-ring: 150 35% 50%;
   }
 }
 
@@ -100,6 +134,69 @@ All colors MUST be HSL.
   }
 
   body {
-    @apply bg-background text-foreground;
+    @apply bg-background text-foreground font-sans antialiased;
+    font-family: 'Inter', sans-serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Crimson Pro', serif;
+  }
+}
+
+@layer utilities {
+  .font-fantasy {
+    font-family: 'Crimson Pro', serif;
+  }
+
+  .gradient-hero {
+    background: var(--gradient-hero);
+  }
+
+  .gradient-card {
+    background: var(--gradient-card);
+  }
+
+  .gradient-accent {
+    background: var(--gradient-accent);
+  }
+
+  .shadow-soft {
+    box-shadow: var(--shadow-soft);
+  }
+
+  .shadow-card {
+    box-shadow: var(--shadow-card);
+  }
+
+  .shadow-glow {
+    box-shadow: var(--shadow-glow);
+  }
+
+  .fantasy-border {
+    border: 1px solid hsl(var(--fantasy-gold) / 0.3);
+    box-shadow: inset 0 1px 0 hsl(var(--fantasy-gold) / 0.1);
+  }
+
+  .animate-float {
+    animation: float 3s ease-in-out infinite;
+  }
+
+  .animate-pulse-slow {
+    animation: pulse 3s ease-in-out infinite;
+  }
+
+  .animate-shimmer {
+    animation: shimmer 2s linear infinite;
+    background-size: 200% 100%;
+  }
+
+  @keyframes float {
+    0%, 100% { transform: translateY(0px); }
+    50% { transform: translateY(-8px); }
+  }
+
+  @keyframes shimmer {
+    0% { background-position: -200% 0; }
+    100% { background-position: 200% 0; }
   }
 }
