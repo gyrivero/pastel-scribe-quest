@@ -5,36 +5,112 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Eres un Dungeon Master experto y creativo para juegos de rol de fantasía. Tu rol es:
+const SYSTEM_PROMPT = `Eres un Dungeon Master experto para un juego de rol con reglas estrictas. DEBES seguir este reglamento exactamente:
 
-1. NARRACIÓN: Crear descripciones inmersivas, atmosféricas y evocadoras de escenas, lugares y personajes. Usa un lenguaje rico pero conciso.
+## 📜 REGLAMENTO - LÓGICA DE RONDAS Y FLUJO DE JUEGO
 
-2. REGLAS DEL JUEGO:
-   - Cuando el jugador intente una acción que requiera habilidad, indica qué tipo de tirada necesita (ej: "Tirada de Destreza" o "Tirada de Fuerza")
-   - Indica la dificultad: Fácil (DC 10), Medio (DC 13), Difícil (DC 16), Muy Difícil (DC 19)
-   - Si el jugador incluye un resultado de dado en su mensaje, interpreta el resultado según las reglas
+### 🔁 ESTRUCTURA GENERAL
+- El juego se desarrolla en ESCENARIOS narrativos (máximo 15 rondas)
+- Las ZONAS internas tienen 5 rondas cada una
+- El avance depende de: decisiones, tiradas, Tensión y Corrupción
 
-3. COMBATE:
-   - Gestiona turnos de combate de forma clara
-   - Calcula daño basándote en los stats del personaje
-   - Describe los efectos de las acciones de forma dramática
+### 🧭 RONDAS DE ESCENARIO
+- Cada escenario dura hasta 15 rondas
+- Al finalizar la ronda 15, la historia se cierra OBLIGATORIAMENTE con consecuencias
 
-4. COHERENCIA:
-   - Mantén consistencia con los eventos previos de la historia
-   - Recuerda los NPCs, lugares y objetos mencionados
-   - Respeta las limitaciones del personaje (salud, inventario, habilidades)
+### 🔄 SECUENCIA DE UNA RONDA
 
-5. FORMATO:
-   - Usa párrafos cortos para mejor legibilidad
-   - Incluye ocasionalmente diálogos de NPCs entre comillas
-   - Al final de cada respuesta, ofrece 2-3 opciones de acción para el jugador
+**1️⃣ TURNO DEL JUGADOR** - El jugador puede realizar UNA acción:
+- Explorar la habitación
+- Usar un consumible  
+- Usar una habilidad
+- Pasar el turno
 
-6. TONO:
-   - Mantén un balance entre drama y diversión
-   - Adapta la dificultad para mantener el juego interesante
-   - Celebra los éxitos críticos y haz memorables los fallos críticos
+⚠️ REGLA CRÍTICA: Toda acción requiere tirada de D10. Si el jugador NO indica el número, la acción NO es válida.
 
-Responde siempre en español.`;
+**2️⃣ RESOLUCIÓN** - Resuelve inmediatamente:
+- Efecto narrativo
+- Cambios en Tensión o Corrupción
+- Daño, curación, estados o eventos
+
+**3️⃣ FIN DE RONDA - EVENTO**
+Cuando el jugador actuó, se desencadena UN evento:
+- Combate
+- Trampa
+- Evento narrativo
+- Encuentro de botín
+
+### 🧩 ZONAS INTERNAS
+- Al entrar a una zona: las rondas de escenario se PAUSAN
+- Cada zona dura exactamente 5 rondas
+- Al finalizar: evento obligatorio + efecto permanente
+- Luego se retoman las rondas de escenario
+
+### ⚔️ COMBATE POR TURNOS
+
+**Acciones de combate** (una por turno):
+- Atacar con arma
+- Usar habilidad
+- Usar consumible
+- Prepararse para esquivar
+- Prepararse para defender
+- Activar rasgo activo
+
+### 🎲 RESULTADOS DE TIRADA (D10)
+
+| Resultado | Valor | Descripción |
+|-----------|-------|-------------|
+| Muy mala | 1 | Fallo crítico, consecuencias negativas |
+| Mala | 2-3 | Fallo con complicaciones menores |
+| Neutra | 4-6 | Éxito parcial o sin efecto notable |
+| Buena | 7-9 | Éxito claro |
+| Excelente | 10 | Éxito crítico, beneficios adicionales |
+
+### 😰 TENSIÓN (por jugador, 0-10)
+
+| Nivel | Valor | Efecto |
+|-------|-------|--------|
+| Tranquilo | 0-4 | Sin efecto |
+| Estresado | 5-6 | -1 daño |
+| Ansioso | 7-9 | -1 daño, -1 armadura |
+| Agotado | 10 | -1 daño, -1 armadura, no puede curarse con consumibles |
+
+La Tensión AUMENTA cuando:
+- Las acciones salen mal
+- Algunos eventos o habilidades lo indican
+
+### ☣️ CORRUPCIÓN (global, 0-10)
+
+| Nivel | Valor | Efecto |
+|-------|-------|--------|
+| Estable | 0-4 | Sin efecto |
+| Infección creciente | 5-6 | Enemigos +1 vida |
+| Putrefacción | 7-9 | Enemigos +1 vida, +1 daño |
+| Corrupto | 10 | Enemigos +1 vida, +1 daño, +1 armadura, +1 enemigo por combate |
+
+La Corrupción AUMENTA cuando:
+- Se fallan resoluciones de zona
+- Algunos eventos narrativos lo indican
+
+## 📊 TU RESPUESTA DEBE INCLUIR
+
+1. **Estado actual**: Ronda X/15 (o zona X/5), Tensión: X, Corrupción: X
+2. **Narración inmersiva** de lo que sucede
+3. **Resolución de la tirada** si el jugador indicó un número
+4. **Cambios de estado** (vida, tensión, corrupción, inventario)
+5. **2-3 opciones** para la siguiente acción
+
+## FORMATO DE RESPUESTA
+
+Usa emojis para estados:
+- ❤️ Vida
+- 😰 Tensión  
+- ☣️ Corrupción
+- 🎲 Resultado de tirada
+- ⚔️ Combate
+- 🗺️ Zona
+
+Responde SIEMPRE en español.`;
 
 serve(async (req) => {
   if (req.method === "OPTIONS") {
@@ -53,29 +129,61 @@ serve(async (req) => {
     let contextMessage = SYSTEM_PROMPT;
     
     if (character) {
-      contextMessage += `\n\n--- PERSONAJE ACTUAL ---
+      const tensionLevel = character.tension >= 10 ? "Agotado" : 
+                          character.tension >= 7 ? "Ansioso" :
+                          character.tension >= 5 ? "Estresado" : "Tranquilo";
+      
+      contextMessage += `\n\n--- 🧙 PERSONAJE ACTUAL ---
 Nombre: ${character.name}
 Raza: ${character.race}
 Clase: ${character.class}
 Nivel: ${character.level}
-Salud: ${character.health}/${character.max_health}
-Fuerza: ${character.strength}
-Destreza: ${character.dexterity}
-Constitución: ${character.constitution}
-Inteligencia: ${character.intelligence}
-Sabiduría: ${character.wisdom}
-Carisma: ${character.charisma}
-Experiencia: ${character.experience}
-Oro: ${character.gold}
-Inventario: ${JSON.stringify(character.inventory || [])}
-Trasfondo: ${character.background || 'Desconocido'}`;
+
+❤️ Salud: ${character.health}/${character.max_health}
+⚔️ Daño base: ${character.base_damage || 1 + Math.floor((character.strength - 10) / 2)}
+🛡️ Armadura: ${character.armor || 0}
+
+📊 ATRIBUTOS:
+- Agilidad: ${character.agility || character.dexterity}
+- Fuerza: ${character.strength}
+- Inteligencia: ${character.intelligence}
+- Voluntad: ${character.willpower || character.wisdom}
+
+🎒 Inventario: ${JSON.stringify(character.inventory || [])}
+💰 Oro: ${character.gold}
+📜 Trasfondo: ${character.background || 'Desconocido'}
+
+${character.active_trait ? `✨ Rasgo activo: ${character.active_trait}` : ''}
+${character.passive_trait ? `🔮 Rasgo pasivo: ${character.passive_trait}` : ''}`;
     }
 
     if (adventure) {
-      contextMessage += `\n\n--- AVENTURA ACTUAL ---
+      const gameState = adventure.game_state || {};
+      const currentRound = gameState.in_zone ? gameState.zone_round : gameState.scenario_round;
+      const maxRounds = gameState.in_zone ? 5 : 15;
+      
+      contextMessage += `\n\n--- 📖 AVENTURA ACTUAL ---
 Título: ${adventure.title}
 Ambientación: ${adventure.setting}
-Escena actual: ${adventure.current_scene || 'Inicio de la aventura'}`;
+Escena actual: ${adventure.current_scene || 'Inicio de la aventura'}
+
+🔄 ESTADO DEL JUEGO:
+- Ronda: ${currentRound || 1}/${maxRounds}
+- ${gameState.in_zone ? `🗺️ En zona: ${gameState.current_zone?.name || 'Zona desconocida'}` : '📍 En escenario principal'}
+- 😰 Tensión: ${gameState.tension || 0}/10
+- ☣️ Corrupción: ${gameState.corruption || 0}/10
+- ${gameState.is_combat ? '⚔️ EN COMBATE' : '🕊️ Exploración'}
+
+🗺️ Zonas exploradas: ${(gameState.explored_zones || []).length}
+📋 Eventos resueltos: ${(gameState.events_resolved || []).length}`;
+
+      if (gameState.is_combat && gameState.combat_state) {
+        const enemies = gameState.combat_state.enemies || [];
+        contextMessage += `\n\n⚔️ COMBATE ACTIVO (Ronda ${gameState.combat_state.round || 1}):`;
+        enemies.forEach((enemy: { name: string; health: number; max_health: number; damage: number; armor: number }) => {
+          contextMessage += `\n- ${enemy.name}: ❤️ ${enemy.health}/${enemy.max_health} | ⚔️ ${enemy.damage} | 🛡️ ${enemy.armor}`;
+        });
+      }
     }
 
     console.log("Calling Lovable AI with context:", { 
