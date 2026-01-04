@@ -1,0 +1,4 @@
+project_id = "fbwiqvntmhmgdoydenfu"
+
+[functions.dungeon-master]
+verify_jwt = false

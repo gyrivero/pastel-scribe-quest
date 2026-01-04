@@ -1,14 +1,36 @@
-// Update this page (the content is just a fallback if you fail to update the page)
+import { useEffect } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { useAuth } from '@/hooks/useAuth';
+import Game from './Game';
 
 const Index = () => {
-  return (
-    <div className="flex min-h-screen items-center justify-center bg-background">
-      <div className="text-center">
-        <h1 className="mb-4 text-4xl font-bold">Welcome to Your Blank App</h1>
-        <p className="text-xl text-muted-foreground">Start building your amazing project here!</p>
+  const { user, loading } = useAuth();
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    if (!loading && !user) {
+      navigate('/auth');
+    }
+  }, [user, loading, navigate]);
+
+  if (loading) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-background gradient-hero">
+        <div className="text-center">
+          <div className="w-16 h-16 rounded-2xl bg-gradient-to-br from-primary to-fantasy-sage flex items-center justify-center shadow-glow mx-auto animate-pulse">
+            <span className="text-2xl">🎲</span>
+          </div>
+          <p className="mt-4 text-muted-foreground font-fantasy">Preparando la aventura...</p>
+        </div>
       </div>
-    </div>
-  );
+    );
+  }
+
+  if (!user) {
+    return null;
+  }
+
+  return <Game />;
 };
 
 export default Index;
