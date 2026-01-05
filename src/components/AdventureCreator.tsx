@@ -14,7 +14,7 @@ interface AdventureCreatorProps {
     title: string;
     description: string;
     setting: string;
-    character_id: string | null;
+    party_ids: string[];
   }) => void;
   onCancel: () => void;
 }
@@ -23,17 +23,23 @@ export function AdventureCreator({ characters, onSubmit, onCancel }: AdventureCr
   const [title, setTitle] = useState('');
   const [description, setDescription] = useState('');
   const [setting, setSetting] = useState('Fantasía Medieval');
-  const [characterId, setCharacterId] = useState<string>('');
+  const [partyIds, setPartyIds] = useState<string[]>([]);
+
+  const togglePartyMember = (id: string) => {
+    setPartyIds((prev) => prev.includes(id) ? prev.filter(c => c !== id) : [...prev, id]);
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     if (!title.trim()) return;
     
+    const roster = partyIds.length ? partyIds : (characters[0] ? [characters[0].id] : []);
+
     onSubmit({
       title: title.trim(),
       description: description.trim(),
       setting,
-      character_id: characterId || null,
+      party_ids: roster,
     });
   };
 
@@ -75,31 +81,30 @@ export function AdventureCreator({ characters, onSubmit, onCancel }: AdventureCr
           </Select>
         </div>
 
-        <div>
-          <Label htmlFor="character">Personaje</Label>
-          <Select value={characterId} onValueChange={setCharacterId}>
-            <SelectTrigger className="mt-1">
-              <SelectValue placeholder="Selecciona un personaje" />
-            </SelectTrigger>
-            <SelectContent>
-              {characters.length === 0 ? (
-                <SelectItem value="none" disabled>
-                  No hay personajes creados
-                </SelectItem>
-              ) : (
-                characters.map((c) => (
-                  <SelectItem key={c.id} value={c.id}>
-                    {c.name} - {c.race} {c.class}
-                  </SelectItem>
-                ))
-              )}
-            </SelectContent>
-          </Select>
-          {characters.length === 0 && (
-            <p className="text-xs text-muted-foreground mt-1">
+        <div className="space-y-2">
+          <Label htmlFor="character">Personajes (elige 1 o más)</Label>
+          {characters.length === 0 ? (
+            <p className="text-xs text-muted-foreground">
               Crea un personaje primero para asignarlo a esta aventura
             </p>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {characters.map((c) => (
+                <Button
+                  key={c.id}
+                  type="button"
+                  variant={partyIds.includes(c.id) ? 'default' : 'outline'}
+                  className="justify-start"
+                  onClick={() => togglePartyMember(c.id)}
+                >
+                  {c.name} — {c.class}
+                </Button>
+              ))}
+            </div>
           )}
+          <p className="text-xs text-muted-foreground">
+            Si no seleccionas ninguno, tomaremos al primer personaje disponible.
+          </p>
         </div>
 
         <div>

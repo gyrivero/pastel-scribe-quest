@@ -106,7 +106,8 @@ export interface InventoryItem {
 export interface Adventure {
   id: string;
   user_id: string;
-  character_id?: string;
+  character_id?: string; // Legacy single-character
+  party_ids?: string[];  // Nuevo: aventura multijugador
   title: string;
   description?: string;
   setting: string;
@@ -125,7 +126,12 @@ export interface GameState {
   max_zone_rounds: number;
   in_zone: boolean;
   current_zone?: Zone;
-  
+
+  // Gestión de turnos y grupo
+  active_character_id?: string;
+  party_order?: string[];
+  current_turn_index?: number;
+
   // Contadores críticos
   tension: number;      // 0-10, por jugador
   corruption: number;   // 0-10, global
@@ -374,6 +380,9 @@ export function createDefaultGameState(): GameState {
     zone_round: 0,
     max_zone_rounds: 5,
     in_zone: false,
+    active_character_id: undefined,
+    party_order: [],
+    current_turn_index: 0,
     tension: 0,
     corruption: 0,
     turn_phase: 'player_action',
