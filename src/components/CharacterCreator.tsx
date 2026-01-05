@@ -84,21 +84,13 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
   const getClassRecommendation = () => {
     switch (characterClass) {
       case 'Guerrero':
-      case 'Bárbaro':
-      case 'Paladín':
-        return 'Fuerza alta recomendada';
-      case 'Pícaro':
-      case 'Ranger':
-      case 'Monje':
-        return 'Agilidad alta recomendada';
-      case 'Mago':
+        return 'Fuerza alta recomendada para maximizar daño y vida';
+      case 'Cazador':
+        return 'Agilidad alta recomendada para precisión y sigilo';
       case 'Hechicero':
-        return 'Inteligencia alta recomendada';
-      case 'Clérigo':
-      case 'Druida':
-      case 'Brujo':
-      case 'Bardo':
-        return 'Voluntad alta recomendada';
+        return 'Inteligencia alta recomendada para magia y análisis';
+      case 'Merodeador':
+        return 'Voluntad alta recomendada para resistencia mental y rasgos';
       default:
         return '';
     }
