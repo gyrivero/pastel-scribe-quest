@@ -41,7 +41,7 @@ function parseGameState(gameStateJson: unknown): GameState {
   const gs = gameStateJson as Record<string, unknown>;
   return {
     scenario_round: (gs.scenario_round as number) || 1,
-    max_scenario_rounds: (gs.max_scenario_rounds as number) || 15,
+    max_scenario_rounds: (gs.max_scenario_rounds as number) || 25,
     zone_round: (gs.zone_round as number) || 0,
     max_zone_rounds: (gs.max_zone_rounds as number) || 5,
     in_zone: (gs.in_zone as boolean) || false,
@@ -261,7 +261,7 @@ export default function Game() {
 
   const handleAction = (actionId: string) => {
     // This will be used to pre-fill actions in the chat
-    toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D10.`);
+    toast.info(`Acción: ${actionId}. Describe una única intención y añade el resultado del D20.`);
   };
 
   const handleUseItem = (item: GameItem) => {
@@ -493,10 +493,33 @@ export default function Game() {
       </header>
 
       <main className="p-4 space-y-6">
+        <Card className="p-5 bg-gradient-to-br from-primary/10 via-background to-fantasy-sage/10 fantasy-border">
+          <div className="flex flex-col gap-3">
+            <div className="flex items-center gap-2">
+              <Menu className="w-5 h-5 text-primary" />
+              <div>
+                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Menú principal</p>
+                <h2 className="font-fantasy text-xl font-semibold">Crea y lanza tu aventura móvil</h2>
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Configura personajes independientes y arranca aventuras compatibles con Android/iOS. Cada escenario dura 25 rondas y las zonas se resuelven en bloques de 5 rondas, sin acciones dobles por turno.
+            </p>
+            <div className="flex flex-wrap gap-2">
+              <Button onClick={() => setView('create-character')} className="gap-2">
+                <User className="w-4 h-4" /> Crear personaje
+              </Button>
+              <Button variant="outline" onClick={() => setView('create-adventure')} className="gap-2">
+                <Plus className="w-4 h-4" /> Iniciar aventura
+              </Button>
+            </div>
+          </div>
+        </Card>
+
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <Button 
-            variant="outline" 
+          <Button
+            variant="outline"
             className="h-auto py-4 flex-col gap-2 fantasy-border hover:bg-fantasy-lavender/20"
             onClick={() => setView('create-character')}
           >
