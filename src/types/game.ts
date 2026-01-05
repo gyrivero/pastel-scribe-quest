@@ -1,6 +1,6 @@
 // ============= SISTEMA DE REGLAS CONSOLIDADO (VERSIÓN DM-IA) =============
 
-// ATRIBUTOS: Valores 1-5 (modifican la tirada D10)
+// ATRIBUTOS: Valores 1-5 (modifican la tirada D20)
 export interface CharacterAttributes {
   agility: number;    // Esquiva, sigilo, precisión
   strength: number;   // Ataques físicos, resistencia
@@ -52,7 +52,7 @@ export interface Character {
   base_damage: number;
   armor: number;
   
-  // Atributos base (1-5, modifican D10)
+  // Atributos base (1-5, modifican D20)
   agility: number;
   strength: number;
   intelligence: number;
@@ -106,7 +106,8 @@ export interface InventoryItem {
 export interface Adventure {
   id: string;
   user_id: string;
-  character_id?: string;
+  character_id?: string; // Legacy single-character
+  party_ids?: string[];  // Nuevo: aventura multijugador
   title: string;
   description?: string;
   setting: string;
@@ -125,7 +126,12 @@ export interface GameState {
   max_zone_rounds: number;
   in_zone: boolean;
   current_zone?: Zone;
-  
+
+  // Gestión de turnos y grupo
+  active_character_id?: string;
+  party_order?: string[];
+  current_turn_index?: number;
+
   // Contadores críticos
   tension: number;      // 0-10, por jugador
   corruption: number;   // 0-10, global
@@ -160,6 +166,7 @@ export interface Zone {
   description: string;
   explored: boolean;
   cleared: boolean;
+  state?: 'unexplored' | 'explored' | 'exhausted' | 'blocked';
   connected_zones: string[];
   position: { x: number; y: number };
   type: 'entrance' | 'room' | 'boss' | 'treasure' | 'trap' | 'exit';
@@ -202,7 +209,14 @@ export interface DiceRoll {
   outcome?: DiceOutcome;
 }
 
-export type DiceOutcome = 'muy_mala' | 'mala' | 'neutra' | 'buena' | 'excelente';
+export type DiceOutcome =
+  | 'catastrofe'
+  | 'muy_malo'
+  | 'malo'
+  | 'neutro'
+  | 'bueno'
+  | 'muy_bueno'
+  | 'perfecto';
 
 export interface ChatMessage {
   role: 'user' | 'assistant';
@@ -223,17 +237,9 @@ export const RACES = [
 
 export const CLASSES = [
   'Guerrero',
-  'Mago',
-  'Pícaro',
-  'Clérigo',
-  'Paladín',
-  'Ranger',
-  'Bardo',
-  'Druida',
-  'Monje',
-  'Brujo',
   'Hechicero',
-  'Bárbaro',
+  'Cazador',
+  'Merodeador',
 ] as const;
 
 export const SETTINGS = [
@@ -254,25 +260,26 @@ export const ATTRIBUTES = [
 
 // Acciones del jugador (fuera de combate)
 export const PLAYER_ACTIONS = [
-  { id: 'explore', name: 'Explorar', description: 'Examinar la habitación o zona actual', attribute: 'intelligence' },
-  { id: 'use_consumable', name: 'Usar Consumible', description: 'Usar una poción u objeto consumible', attribute: null },
-  { id: 'use_ability', name: 'Usar Habilidad', description: 'Activar una habilidad especial', attribute: null },
-  { id: 'attack', name: 'Atacar', description: 'Atacar a un enemigo o objetivo', attribute: 'strength' },
-  { id: 'prepare_dodge', name: 'Preparar Esquiva', description: 'Prepararse para esquivar', attribute: 'agility' },
-  { id: 'prepare_defend', name: 'Preparar Defensa', description: 'Prepararse para defender', attribute: 'strength' },
-  { id: 'active_trait', name: 'Rasgo Activo', description: 'Activar tu rasgo especial', attribute: null },
-  { id: 'pass', name: 'Pasar Turno', description: 'No realizar ninguna acción', attribute: null },
+  { id: 'attack', name: 'Atacar', description: 'Un solo ataque o intento de impacto', attribute: 'strength' },
+  { id: 'use_ability', name: 'Usar habilidad', description: 'Activar una habilidad especial', attribute: null },
+  { id: 'use_item', name: 'Usar objeto', description: 'Consumible, llave o herramienta', attribute: null },
+  { id: 'explore', name: 'Explorar', description: 'Examinar la zona actual', attribute: 'intelligence' },
+  { id: 'search', name: 'Buscar', description: 'Declarar un objetivo concreto a encontrar', attribute: 'intelligence' },
+  { id: 'prepare_dodge', name: 'Prepararse (esquiva)', description: 'Enfocar el turno en esquivar', attribute: 'agility' },
+  { id: 'prepare_defend', name: 'Prepararse (defensa)', description: 'Enfocar el turno en resistir', attribute: 'strength' },
+  { id: 'active_trait', name: 'Activar rasgo', description: 'Rasgo activo único', attribute: null },
+  { id: 'pass', name: 'Pasar', description: 'Ceder el turno sin actuar', attribute: null },
 ] as const;
 
 // Acciones de combate
 export const COMBAT_ACTIONS = [
-  { id: 'attack', name: 'Atacar', description: 'Atacar con el arma equipada', attribute: 'strength' },
-  { id: 'ability', name: 'Habilidad', description: 'Usar una habilidad de combate', attribute: null },
-  { id: 'use_item', name: 'Usar Objeto', description: 'Usar cualquier objeto del inventario', attribute: null },
-  { id: 'consumable', name: 'Consumible', description: 'Usar un consumible', attribute: null },
-  { id: 'dodge', name: 'Esquivar', description: 'Prepararse para esquivar el próximo ataque', attribute: 'agility' },
-  { id: 'defend', name: 'Defender', description: 'Prepararse para defender', attribute: 'strength' },
-  { id: 'trait', name: 'Rasgo Activo', description: 'Activar tu rasgo especial', attribute: 'willpower' },
+  { id: 'attack', name: 'Atacar', description: 'Un único ataque con el arma equipada', attribute: 'strength' },
+  { id: 'use_ability', name: 'Usar habilidad', description: 'Habilidad de clase o técnica', attribute: null },
+  { id: 'use_item', name: 'Usar objeto', description: 'Arma secundaria, consumible o herramienta', attribute: null },
+  { id: 'prepare_dodge', name: 'Prepararse (esquiva)', description: 'Centrarse en esquivar', attribute: 'agility' },
+  { id: 'prepare_defend', name: 'Prepararse (defensa)', description: 'Centrarse en resistir daño', attribute: 'strength' },
+  { id: 'active_trait', name: 'Activar rasgo', description: 'Rasgo activo único', attribute: 'willpower' },
+  { id: 'pass', name: 'Pasar', description: 'No realizar acción en combate', attribute: null },
 ] as const;
 
 // Niveles de tensión con efectos
@@ -293,33 +300,43 @@ export const CORRUPTION_LEVELS = [
 
 // ============= FUNCIONES DE UTILIDAD =============
 
-// Interpreta el resultado FINAL (D10 + atributo)
-export function getDiceOutcome(total: number): DiceOutcome {
-  if (total <= 1) return 'muy_mala';
-  if (total <= 3) return 'mala';
-  if (total <= 6) return 'neutra';
-  if (total <= 9) return 'buena';
-  return 'excelente';
+// Interpreta el resultado FINAL (D20 + atributo). El 1 natural siempre es catástrofe.
+export function getDiceOutcome(natural: number, total?: number): DiceOutcome {
+  if (natural === 1) return 'catastrofe';
+
+  const finalTotal = total ?? natural;
+
+  if (natural >= 20 || finalTotal >= 20) return 'perfecto';
+  if (finalTotal >= 17) return 'muy_bueno';
+  if (finalTotal >= 13) return 'bueno';
+  if (finalTotal >= 9) return 'neutro';
+  if (finalTotal >= 5) return 'malo';
+  if (finalTotal >= 2) return 'muy_malo';
+  return 'catastrofe';
 }
 
 export function getOutcomeLabel(outcome: DiceOutcome): string {
   const labels: Record<DiceOutcome, string> = {
-    'muy_mala': 'Muy Mala',
-    'mala': 'Mala',
-    'neutra': 'Neutra',
-    'buena': 'Buena',
-    'excelente': 'Excelente',
+    'catastrofe': 'Catástrofe',
+    'muy_malo': 'Muy malo',
+    'malo': 'Malo',
+    'neutro': 'Neutro',
+    'bueno': 'Bueno',
+    'muy_bueno': 'Muy bueno',
+    'perfecto': 'Perfecto',
   };
   return labels[outcome];
 }
 
 export function getOutcomeColor(outcome: DiceOutcome): string {
   const colors: Record<DiceOutcome, string> = {
-    'muy_mala': 'text-red-500',
-    'mala': 'text-orange-500',
-    'neutra': 'text-muted-foreground',
-    'buena': 'text-green-500',
-    'excelente': 'text-primary',
+    'catastrofe': 'text-red-600',
+    'muy_malo': 'text-orange-600',
+    'malo': 'text-amber-500',
+    'neutro': 'text-muted-foreground',
+    'bueno': 'text-green-500',
+    'muy_bueno': 'text-emerald-500',
+    'perfecto': 'text-primary',
   };
   return colors[outcome];
 }
@@ -359,10 +376,13 @@ export function applyCorruptionToEnemy(enemy: Enemy, corruption: number): Enemy 
 export function createDefaultGameState(): GameState {
   return {
     scenario_round: 1,
-    max_scenario_rounds: 15,
+    max_scenario_rounds: 25,
     zone_round: 0,
     max_zone_rounds: 5,
     in_zone: false,
+    active_character_id: undefined,
+    party_order: [],
+    current_turn_index: 0,
     tension: 0,
     corruption: 0,
     turn_phase: 'player_action',
