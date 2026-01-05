@@ -1,88 +1,129 @@
 import { useState } from 'react';
 import { Button } from '@/components/ui/button';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Label } from '@/components/ui/label';
 import { cn } from '@/lib/utils';
 import { Dices } from 'lucide-react';
+import { ATTRIBUTES, getDiceOutcome, getOutcomeLabel, getOutcomeColor, Character } from '@/types/game';
 
 interface DiceRollerProps {
-  onRoll: (dice: string, result: number) => void;
+  onRoll: (dice: string, result: number, attribute?: string, modifier?: number, total?: number) => void;
+  character?: Character | null;
 }
 
-const DICE_TYPES = [
-  { name: 'd4', sides: 4 },
-  { name: 'd6', sides: 6 },
-  { name: 'd8', sides: 8 },
-  { name: 'd10', sides: 10 },
-  { name: 'd12', sides: 12 },
-  { name: 'd20', sides: 20 },
-  { name: 'd100', sides: 100 },
-];
-
-export function DiceRoller({ onRoll }: DiceRollerProps) {
-  const [lastRoll, setLastRoll] = useState<{ dice: string; result: number } | null>(null);
+export function DiceRoller({ onRoll, character }: DiceRollerProps) {
+  const [lastRoll, setLastRoll] = useState<{ 
+    dice: string; 
+    result: number; 
+    attribute?: string;
+    modifier: number;
+    total: number;
+  } | null>(null);
   const [isRolling, setIsRolling] = useState(false);
+  const [selectedAttribute, setSelectedAttribute] = useState<string>('none');
 
-  const rollDice = (dice: string, sides: number) => {
+  const rollD10 = () => {
     setIsRolling(true);
     
-    // Animate for a moment
     setTimeout(() => {
-      const result = Math.floor(Math.random() * sides) + 1;
-      setLastRoll({ dice, result });
+      const result = Math.floor(Math.random() * 10) + 1;
+      
+      let modifier = 0;
+      let attrName: string | undefined;
+      
+      if (selectedAttribute !== 'none' && character) {
+        modifier = character[selectedAttribute as keyof typeof character] as number || 0;
+        attrName = ATTRIBUTES.find(a => a.id === selectedAttribute)?.name;
+      }
+      
+      const total = result + modifier;
+      
+      setLastRoll({ dice: 'd10', result, attribute: attrName, modifier, total });
       setIsRolling(false);
-      onRoll(dice, result);
+      onRoll('d10', result, attrName, modifier, total);
     }, 600);
   };
 
-  const isCritical = lastRoll?.dice === 'd20' && lastRoll.result === 20;
-  const isFumble = lastRoll?.dice === 'd20' && lastRoll.result === 1;
+  const outcome = lastRoll ? getDiceOutcome(lastRoll.total) : null;
 
   return (
     <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 shadow-card fantasy-border">
       <div className="flex items-center gap-2 mb-3">
         <Dices className="w-5 h-5 text-primary" />
-        <h3 className="font-fantasy text-lg font-semibold">Dados</h3>
+        <h3 className="font-fantasy text-lg font-semibold">Tirada D10</h3>
       </div>
       
-      <div className="flex flex-wrap gap-2 mb-4">
-        {DICE_TYPES.map(({ name, sides }) => (
-          <Button
-            key={name}
-            variant="outline"
-            size="sm"
-            onClick={() => rollDice(name, sides)}
-            disabled={isRolling}
-            className="min-w-[3rem] font-medium hover:bg-primary/10 hover:border-primary/50 transition-all"
-          >
-            {name}
-          </Button>
-        ))}
+      {/* Attribute selector */}
+      <div className="mb-4">
+        <Label className="text-xs text-muted-foreground mb-1 block">
+          Atributo (modifica la tirada)
+        </Label>
+        <Select value={selectedAttribute} onValueChange={setSelectedAttribute}>
+          <SelectTrigger className="w-full">
+            <SelectValue placeholder="Sin atributo" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="none">Sin atributo</SelectItem>
+            {ATTRIBUTES.map((attr) => {
+              const value = character?.[attr.id as keyof typeof character] as number;
+              return (
+                <SelectItem key={attr.id} value={attr.id}>
+                  {attr.name} {value !== undefined && `(+${value})`}
+                </SelectItem>
+              );
+            })}
+          </SelectContent>
+        </Select>
       </div>
+
+      {/* Roll button */}
+      <Button
+        onClick={rollD10}
+        disabled={isRolling}
+        className="w-full gap-2 mb-4"
+        size="lg"
+      >
+        <Dices className={cn("w-5 h-5", isRolling && "animate-spin")} />
+        Tirar D10
+      </Button>
       
+      {/* Result display */}
       {lastRoll && (
         <div 
           className={cn(
-            "flex items-center justify-center p-4 rounded-lg transition-all",
+            "flex flex-col items-center justify-center p-4 rounded-lg transition-all",
             isRolling && "animate-dice-roll",
-            isCritical && "bg-primary/20 ring-2 ring-primary",
-            isFumble && "bg-destructive/20 ring-2 ring-destructive",
-            !isCritical && !isFumble && "bg-muted"
+            outcome === 'excelente' && "bg-primary/20 ring-2 ring-primary",
+            outcome === 'muy_mala' && "bg-destructive/20 ring-2 ring-destructive",
+            !['excelente', 'muy_mala'].includes(outcome || '') && "bg-muted"
           )}
         >
-          <div className="text-center">
-            <p className="text-sm text-muted-foreground mb-1">{lastRoll.dice}</p>
-            <p className={cn(
-              "text-3xl font-fantasy font-bold",
-              isCritical && "text-primary",
-              isFumble && "text-destructive"
-            )}>
-              {lastRoll.result}
+          {/* Dice result */}
+          <div className="flex items-center gap-2 mb-2">
+            <span className="text-2xl font-fantasy font-bold">{lastRoll.result}</span>
+            {lastRoll.modifier > 0 && (
+              <>
+                <span className="text-muted-foreground">+</span>
+                <span className="text-lg font-medium text-primary">{lastRoll.modifier}</span>
+                <span className="text-xs text-muted-foreground">({lastRoll.attribute})</span>
+              </>
+            )}
+            <span className="text-muted-foreground">=</span>
+            <span className={cn("text-3xl font-fantasy font-bold", outcome && getOutcomeColor(outcome))}>
+              {lastRoll.total}
+            </span>
+          </div>
+          
+          {/* Outcome label */}
+          {outcome && (
+            <p className={cn("text-sm font-medium", getOutcomeColor(outcome))}>
+              {getOutcomeLabel(outcome)}
             </p>
-            {isCritical && (
-              <p className="text-xs text-primary font-medium mt-1">¡Crítico!</p>
-            )}
-            {isFumble && (
-              <p className="text-xs text-destructive font-medium mt-1">¡Pifia!</p>
-            )}
+          )}
+          
+          {/* Outcome guide */}
+          <div className="mt-3 text-xs text-muted-foreground text-center">
+            <p>≤1: Muy Mala | 2-3: Mala | 4-6: Neutra | 7-9: Buena | ≥10: Excelente</p>
           </div>
         </div>
       )}

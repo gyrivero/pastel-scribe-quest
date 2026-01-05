@@ -38,9 +38,13 @@ export function ChatInterface({
 
     let messageContent = input.trim();
     
-    // Include dice roll if recent
+    // Include dice roll if recent - now with attribute modifier
     if (lastDiceRoll) {
-      messageContent += `\n\n[Tirada de ${lastDiceRoll.dice}: ${lastDiceRoll.result}]`;
+      if (lastDiceRoll.attribute && lastDiceRoll.modifier) {
+        messageContent += `\n\n[Tirada de ${lastDiceRoll.dice}: ${lastDiceRoll.result} + ${lastDiceRoll.attribute}: ${lastDiceRoll.modifier} = Total: ${lastDiceRoll.total}]`;
+      } else {
+        messageContent += `\n\n[Tirada de ${lastDiceRoll.dice}: ${lastDiceRoll.result}]`;
+      }
     }
 
     const userMessage: ChatMessage = { role: 'user', content: messageContent };
@@ -191,10 +195,13 @@ export function ChatInterface({
 
       <div className="p-4 border-t border-border bg-background/50">
         {lastDiceRoll && (
-          <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground">
+          <div className="flex items-center gap-2 mb-2 text-sm text-muted-foreground bg-muted/50 p-2 rounded-lg">
             <Dices className="w-4 h-4" />
             <span>
-              Tirada de {lastDiceRoll.dice}: <strong>{lastDiceRoll.result}</strong>
+              {lastDiceRoll.dice}: <strong>{lastDiceRoll.result}</strong>
+              {lastDiceRoll.attribute && lastDiceRoll.modifier !== undefined && (
+                <> + {lastDiceRoll.attribute}: <strong>{lastDiceRoll.modifier}</strong> = <strong className="text-primary">{lastDiceRoll.total}</strong></>
+              )}
             </span>
           </div>
         )}

@@ -5,24 +5,26 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { RACES, CLASSES } from '@/types/game';
-import { Sparkles, Dices } from 'lucide-react';
+import { RACES, CLASSES, ATTRIBUTES } from '@/types/game';
+import { Sparkles, Dices, Plus, Minus } from 'lucide-react';
 
 interface CharacterCreatorProps {
   onSubmit: (character: {
     name: string;
     race: string;
     class: string;
+    agility: number;
     strength: number;
-    dexterity: number;
-    constitution: number;
     intelligence: number;
-    wisdom: number;
-    charisma: number;
+    willpower: number;
     background: string;
   }) => void;
   onCancel: () => void;
 }
+
+const INITIAL_POINTS = 10;
+const MIN_ATTR = 1;
+const MAX_ATTR = 5;
 
 export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) {
   const [name, setName] = useState('');
@@ -30,30 +32,40 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
   const [characterClass, setCharacterClass] = useState('Guerrero');
   const [background, setBackground] = useState('');
   const [stats, setStats] = useState({
-    strength: 10,
-    dexterity: 10,
-    constitution: 10,
-    intelligence: 10,
-    wisdom: 10,
-    charisma: 10,
+    agility: 2,
+    strength: 3,
+    intelligence: 2,
+    willpower: 3,
   });
 
-  const rollStat = () => {
-    // Roll 4d6, drop lowest
-    const rolls = Array(4).fill(0).map(() => Math.floor(Math.random() * 6) + 1);
-    rolls.sort((a, b) => b - a);
-    return rolls.slice(0, 3).reduce((sum, val) => sum + val, 0);
+  const usedPoints = stats.agility + stats.strength + stats.intelligence + stats.willpower;
+  const remainingPoints = INITIAL_POINTS - usedPoints;
+
+  const adjustStat = (stat: keyof typeof stats, delta: number) => {
+    const newValue = stats[stat] + delta;
+    if (newValue < MIN_ATTR || newValue > MAX_ATTR) return;
+    if (delta > 0 && remainingPoints <= 0) return;
+    
+    setStats(prev => ({ ...prev, [stat]: newValue }));
   };
 
-  const rollAllStats = () => {
-    setStats({
-      strength: rollStat(),
-      dexterity: rollStat(),
-      constitution: rollStat(),
-      intelligence: rollStat(),
-      wisdom: rollStat(),
-      charisma: rollStat(),
-    });
+  const rollStats = () => {
+    // Distribuye puntos aleatoriamente
+    let remaining = INITIAL_POINTS;
+    const newStats = { agility: 1, strength: 1, intelligence: 1, willpower: 1 };
+    remaining -= 4; // Ya asignamos 1 a cada uno
+    
+    // Distribuir puntos restantes
+    const keys = Object.keys(newStats) as (keyof typeof newStats)[];
+    while (remaining > 0) {
+      const randomKey = keys[Math.floor(Math.random() * keys.length)];
+      if (newStats[randomKey] < MAX_ATTR) {
+        newStats[randomKey]++;
+        remaining--;
+      }
+    }
+    
+    setStats(newStats);
   };
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -67,6 +79,29 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
       background: background.trim(),
       ...stats,
     });
+  };
+
+  const getClassRecommendation = () => {
+    switch (characterClass) {
+      case 'Guerrero':
+      case 'Bárbaro':
+      case 'Paladín':
+        return 'Fuerza alta recomendada';
+      case 'Pícaro':
+      case 'Ranger':
+      case 'Monje':
+        return 'Agilidad alta recomendada';
+      case 'Mago':
+      case 'Hechicero':
+        return 'Inteligencia alta recomendada';
+      case 'Clérigo':
+      case 'Druida':
+      case 'Brujo':
+      case 'Bardo':
+        return 'Voluntad alta recomendada';
+      default:
+        return '';
+    }
   };
 
   return (
@@ -122,30 +157,78 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
           </div>
         </div>
 
+        {getClassRecommendation() && (
+          <p className="text-xs text-muted-foreground italic">
+            💡 {getClassRecommendation()}
+          </p>
+        )}
+
         <div>
           <div className="flex items-center justify-between mb-2">
-            <Label>Estadísticas</Label>
-            <Button 
-              type="button" 
-              variant="outline" 
-              size="sm"
-              onClick={rollAllStats}
-              className="gap-2"
-            >
-              <Dices className="w-4 h-4" />
-              Tirar dados
-            </Button>
+            <Label>Atributos (1-5)</Label>
+            <div className="flex items-center gap-2">
+              <span className={`text-sm font-medium ${remainingPoints < 0 ? 'text-destructive' : remainingPoints === 0 ? 'text-primary' : 'text-muted-foreground'}`}>
+                Puntos: {remainingPoints}/{INITIAL_POINTS}
+              </span>
+              <Button 
+                type="button" 
+                variant="outline" 
+                size="sm"
+                onClick={rollStats}
+                className="gap-1"
+              >
+                <Dices className="w-4 h-4" />
+                Aleatorio
+              </Button>
+            </div>
           </div>
-          <div className="grid grid-cols-3 gap-2">
-            {Object.entries(stats).map(([stat, value]) => (
-              <div key={stat} className="text-center p-3 rounded-lg bg-muted/50">
-                <p className="text-xs text-muted-foreground uppercase mb-1">
-                  {stat.slice(0, 3)}
-                </p>
-                <p className="text-lg font-bold">{value}</p>
-              </div>
-            ))}
+          
+          <div className="space-y-2">
+            {ATTRIBUTES.map((attr) => {
+              const value = stats[attr.id as keyof typeof stats];
+              return (
+                <div key={attr.id} className="flex items-center gap-3 p-2 rounded-lg bg-muted/50">
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{attr.name}</p>
+                    <p className="text-xs text-muted-foreground">{attr.description}</p>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => adjustStat(attr.id as keyof typeof stats, -1)}
+                      disabled={value <= MIN_ATTR}
+                    >
+                      <Minus className="w-4 h-4" />
+                    </Button>
+                    <span className="w-8 text-center text-lg font-bold">{value}</span>
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="icon"
+                      className="h-8 w-8"
+                      onClick={() => adjustStat(attr.id as keyof typeof stats, 1)}
+                      disabled={value >= MAX_ATTR || remainingPoints <= 0}
+                    >
+                      <Plus className="w-4 h-4" />
+                    </Button>
+                  </div>
+                </div>
+              );
+            })}
           </div>
+        </div>
+
+        {/* Stats preview */}
+        <div className="p-3 rounded-lg bg-primary/10 border border-primary/20">
+          <p className="text-xs font-medium mb-1">Vista previa del personaje:</p>
+          <p className="text-sm">
+            ❤️ Vida: <strong>{10 + stats.strength}</strong> | 
+            ⚔️ Daño base: <strong>{1 + Math.floor(stats.strength / 2)}</strong> | 
+            🛡️ Armadura: <strong>0</strong>
+          </p>
         </div>
 
         <div>
@@ -163,7 +246,7 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
           <Button type="button" variant="outline" onClick={onCancel} className="flex-1">
             Cancelar
           </Button>
-          <Button type="submit" disabled={!name.trim()} className="flex-1">
+          <Button type="submit" disabled={!name.trim() || remainingPoints !== 0} className="flex-1">
             Crear Personaje
           </Button>
         </div>
