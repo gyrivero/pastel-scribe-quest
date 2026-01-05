@@ -1,3 +1,43 @@
+// ============= SISTEMA DE REGLAS CONSOLIDADO (VERSIÓN DM-IA) =============
+
+// ATRIBUTOS: Valores 1-5 (modifican la tirada D10)
+export interface CharacterAttributes {
+  agility: number;    // Esquiva, sigilo, precisión
+  strength: number;   // Ataques físicos, resistencia
+  intelligence: number; // Magia, análisis, conocimiento
+  willpower: number;  // Resistencia mental, habilidades especiales
+}
+
+// HABILIDADES DE CLASE
+export interface Skill {
+  id: string;
+  name: string;
+  class: string;
+  type: 'active' | 'passive';
+  cost?: string;          // Ej: "1 tensión", "turno de preparación"
+  effect_mechanical: string;
+  effect_narrative: string;
+  conditions?: string;
+}
+
+// OBJETOS con estructura completa
+export interface GameItem {
+  id: string;
+  name: string;
+  type: 'weapon' | 'consumable' | 'utility' | 'relic';
+  effect_mechanical: string;
+  effect_narrative: string;
+  uses: 'limited' | 'unlimited';
+  uses_remaining?: number;
+  restrictions?: string;
+  equipped?: boolean;
+  // Weapon specific
+  damage?: number;
+  // Armor/utility specific
+  armor_value?: number;
+}
+
+// PERSONAJE según el reglamento
 export interface Character {
   id: string;
   user_id: string;
@@ -5,31 +45,51 @@ export interface Character {
   race: string;
   class: string;
   level: number;
+  
+  // Stats derivados
   health: number;
   max_health: number;
+  base_damage: number;
+  armor: number;
+  
+  // Atributos base (1-5, modifican D10)
+  agility: number;
   strength: number;
+  intelligence: number;
+  willpower: number;
+  
+  // Legacy D&D stats (para compatibilidad DB)
   dexterity: number;
   constitution: number;
-  intelligence: number;
   wisdom: number;
   charisma: number;
-  experience: number;
-  gold: number;
-  inventory: InventoryItem[];
+  
+  // Rasgos
+  active_trait?: string;
+  passive_trait?: string;
+  
+  // Habilidades adquiridas
+  skills: Skill[];
+  
+  // Inventario
+  inventory: GameItem[];
   equipment: Equipment;
+  
+  gold: number;
+  experience: number;
   background?: string;
   avatar_url?: string;
   created_at: string;
   updated_at: string;
-  // New attributes for the ruleset
-  agility: number;
-  willpower: number;
-  base_damage: number;
-  armor: number;
-  active_trait?: string;
-  passive_trait?: string;
 }
 
+export interface Equipment {
+  weapon?: GameItem;
+  armor?: GameItem;
+  accessory?: GameItem;
+}
+
+// Para compatibilidad con InventoryItem viejo
 export interface InventoryItem {
   id: string;
   name: string;
@@ -41,12 +101,6 @@ export interface InventoryItem {
   damage?: number;
   armor_value?: number;
   equipped?: boolean;
-}
-
-export interface Equipment {
-  weapon?: InventoryItem;
-  armor?: InventoryItem;
-  accessory?: InventoryItem;
 }
 
 export interface Adventure {
@@ -64,20 +118,40 @@ export interface Adventure {
 }
 
 export interface GameState {
+  // Rondas
   scenario_round: number;
   max_scenario_rounds: number;
   zone_round: number;
   max_zone_rounds: number;
   in_zone: boolean;
   current_zone?: Zone;
-  tension: number;
-  corruption: number;
+  
+  // Contadores críticos
+  tension: number;      // 0-10, por jugador
+  corruption: number;   // 0-10, global
+  
+  // Estado del turno
   turn_phase: TurnPhase;
   is_combat: boolean;
   combat_state?: CombatState;
+  
+  // Zonas
   zones: Zone[];
   explored_zones: string[];
   events_resolved: string[];
+  
+  // Decisiones narrativas clave (para persistencia)
+  key_decisions: string[];
+  
+  // Estados activos del personaje
+  active_states: ActiveState[];
+}
+
+export interface ActiveState {
+  id: string;
+  name: string;
+  effect: string;
+  duration?: number; // rondas restantes, undefined = permanente
 }
 
 export interface Zone {
@@ -120,9 +194,10 @@ export interface StoryLog {
 
 export interface DiceRoll {
   dice: string;
-  result: number;
-  modifier?: number;
-  total: number;
+  result: number;       // Resultado del dado crudo
+  attribute?: string;   // Atributo usado
+  modifier?: number;    // Valor del atributo
+  total: number;        // resultado + modificador
   type?: string;
   outcome?: DiceOutcome;
 }
@@ -134,6 +209,7 @@ export interface ChatMessage {
   content: string;
 }
 
+// Constantes
 export const RACES = [
   'Humano',
   'Elfo',
@@ -168,42 +244,84 @@ export const SETTINGS = [
   'Mundo Abierto',
 ] as const;
 
+// Atributos disponibles para tiradas
+export const ATTRIBUTES = [
+  { id: 'agility', name: 'Agilidad', description: 'Esquiva, sigilo, precisión' },
+  { id: 'strength', name: 'Fuerza', description: 'Ataques físicos, resistencia' },
+  { id: 'intelligence', name: 'Inteligencia', description: 'Magia, análisis, conocimiento' },
+  { id: 'willpower', name: 'Voluntad', description: 'Resistencia mental, habilidades especiales' },
+] as const;
+
+// Acciones del jugador (fuera de combate)
 export const PLAYER_ACTIONS = [
-  { id: 'explore', name: 'Explorar', description: 'Examinar la habitación o zona actual' },
-  { id: 'use_consumable', name: 'Usar Consumible', description: 'Usar una poción u objeto consumible' },
-  { id: 'use_ability', name: 'Usar Habilidad', description: 'Activar una habilidad especial' },
-  { id: 'pass', name: 'Pasar Turno', description: 'No realizar ninguna acción' },
+  { id: 'explore', name: 'Explorar', description: 'Examinar la habitación o zona actual', attribute: 'intelligence' },
+  { id: 'use_consumable', name: 'Usar Consumible', description: 'Usar una poción u objeto consumible', attribute: null },
+  { id: 'use_ability', name: 'Usar Habilidad', description: 'Activar una habilidad especial', attribute: null },
+  { id: 'attack', name: 'Atacar', description: 'Atacar a un enemigo o objetivo', attribute: 'strength' },
+  { id: 'prepare_dodge', name: 'Preparar Esquiva', description: 'Prepararse para esquivar', attribute: 'agility' },
+  { id: 'prepare_defend', name: 'Preparar Defensa', description: 'Prepararse para defender', attribute: 'strength' },
+  { id: 'active_trait', name: 'Rasgo Activo', description: 'Activar tu rasgo especial', attribute: null },
+  { id: 'pass', name: 'Pasar Turno', description: 'No realizar ninguna acción', attribute: null },
 ] as const;
 
+// Acciones de combate
 export const COMBAT_ACTIONS = [
-  { id: 'attack', name: 'Atacar', description: 'Atacar con el arma equipada' },
-  { id: 'ability', name: 'Habilidad', description: 'Usar una habilidad de combate' },
-  { id: 'consumable', name: 'Consumible', description: 'Usar un consumible' },
-  { id: 'dodge', name: 'Esquivar', description: 'Prepararse para esquivar el próximo ataque' },
-  { id: 'defend', name: 'Defender', description: 'Prepararse para defender' },
-  { id: 'trait', name: 'Rasgo Activo', description: 'Activar tu rasgo especial' },
+  { id: 'attack', name: 'Atacar', description: 'Atacar con el arma equipada', attribute: 'strength' },
+  { id: 'ability', name: 'Habilidad', description: 'Usar una habilidad de combate', attribute: null },
+  { id: 'use_item', name: 'Usar Objeto', description: 'Usar cualquier objeto del inventario', attribute: null },
+  { id: 'consumable', name: 'Consumible', description: 'Usar un consumible', attribute: null },
+  { id: 'dodge', name: 'Esquivar', description: 'Prepararse para esquivar el próximo ataque', attribute: 'agility' },
+  { id: 'defend', name: 'Defender', description: 'Prepararse para defender', attribute: 'strength' },
+  { id: 'trait', name: 'Rasgo Activo', description: 'Activar tu rasgo especial', attribute: 'willpower' },
 ] as const;
 
+// Niveles de tensión con efectos
 export const TENSION_LEVELS = [
-  { min: 0, max: 4, name: 'Tranquilo', effect: 'Sin efectos', color: 'bg-green-500' },
-  { min: 5, max: 6, name: 'Estresado', effect: '-1 daño', color: 'bg-yellow-500' },
-  { min: 7, max: 9, name: 'Ansioso', effect: '-1 daño, -1 armadura', color: 'bg-orange-500' },
-  { min: 10, max: 10, name: 'Agotado', effect: '-1 daño, -1 armadura, no puede curarse', color: 'bg-red-500' },
+  { min: 0, max: 4, name: 'Tranquilo', effect: 'Sin efectos', color: 'bg-green-500', damage_mod: 0, armor_mod: 0, can_heal: true },
+  { min: 5, max: 6, name: 'Estresado', effect: '-1 daño', color: 'bg-yellow-500', damage_mod: -1, armor_mod: 0, can_heal: true },
+  { min: 7, max: 9, name: 'Ansioso', effect: '-1 daño, -1 armadura', color: 'bg-orange-500', damage_mod: -1, armor_mod: -1, can_heal: true },
+  { min: 10, max: 10, name: 'Agotado', effect: '-1 daño, -1 armadura, no puede curarse', color: 'bg-red-500', damage_mod: -1, armor_mod: -1, can_heal: false },
 ] as const;
 
+// Niveles de corrupción con efectos
 export const CORRUPTION_LEVELS = [
-  { min: 0, max: 4, name: 'Estable', effect: 'Sin efectos', color: 'bg-green-500' },
-  { min: 5, max: 6, name: 'Infección Creciente', effect: 'Enemigos +1 vida', color: 'bg-yellow-500' },
-  { min: 7, max: 9, name: 'Putrefacción', effect: 'Enemigos +1 vida, +1 daño', color: 'bg-purple-500' },
-  { min: 10, max: 10, name: 'Corrupto', effect: 'Enemigos +1 vida, +1 daño, +1 armadura, +1 enemigo', color: 'bg-red-900' },
+  { min: 0, max: 4, name: 'Estable', effect: 'Sin efectos', color: 'bg-green-500', enemy_health: 0, enemy_damage: 0, enemy_armor: 0, extra_enemies: 0 },
+  { min: 5, max: 6, name: 'Infección Creciente', effect: 'Enemigos +1 vida', color: 'bg-yellow-500', enemy_health: 1, enemy_damage: 0, enemy_armor: 0, extra_enemies: 0 },
+  { min: 7, max: 9, name: 'Putrefacción', effect: 'Enemigos +1 vida, +1 daño', color: 'bg-purple-500', enemy_health: 1, enemy_damage: 1, enemy_armor: 0, extra_enemies: 0 },
+  { min: 10, max: 10, name: 'Corrupto', effect: '+1 vida, +1 daño, +1 armadura, +1 enemigo', color: 'bg-red-900', enemy_health: 1, enemy_damage: 1, enemy_armor: 1, extra_enemies: 1 },
 ] as const;
 
-export function getDiceOutcome(result: number): DiceOutcome {
-  if (result === 1) return 'muy_mala';
-  if (result <= 3) return 'mala';
-  if (result <= 6) return 'neutra';
-  if (result <= 9) return 'buena';
+// ============= FUNCIONES DE UTILIDAD =============
+
+// Interpreta el resultado FINAL (D10 + atributo)
+export function getDiceOutcome(total: number): DiceOutcome {
+  if (total <= 1) return 'muy_mala';
+  if (total <= 3) return 'mala';
+  if (total <= 6) return 'neutra';
+  if (total <= 9) return 'buena';
   return 'excelente';
+}
+
+export function getOutcomeLabel(outcome: DiceOutcome): string {
+  const labels: Record<DiceOutcome, string> = {
+    'muy_mala': 'Muy Mala',
+    'mala': 'Mala',
+    'neutra': 'Neutra',
+    'buena': 'Buena',
+    'excelente': 'Excelente',
+  };
+  return labels[outcome];
+}
+
+export function getOutcomeColor(outcome: DiceOutcome): string {
+  const colors: Record<DiceOutcome, string> = {
+    'muy_mala': 'text-red-500',
+    'mala': 'text-orange-500',
+    'neutra': 'text-muted-foreground',
+    'buena': 'text-green-500',
+    'excelente': 'text-primary',
+  };
+  return colors[outcome];
 }
 
 export function getTensionLevel(tension: number) {
@@ -212,6 +330,30 @@ export function getTensionLevel(tension: number) {
 
 export function getCorruptionLevel(corruption: number) {
   return CORRUPTION_LEVELS.find(l => corruption >= l.min && corruption <= l.max) || CORRUPTION_LEVELS[0];
+}
+
+// Calcula el daño efectivo considerando tensión
+export function getEffectiveDamage(baseDamage: number, tension: number): number {
+  const level = getTensionLevel(tension);
+  return Math.max(0, baseDamage + level.damage_mod);
+}
+
+// Calcula la armadura efectiva considerando tensión
+export function getEffectiveArmor(baseArmor: number, tension: number): number {
+  const level = getTensionLevel(tension);
+  return Math.max(0, baseArmor + level.armor_mod);
+}
+
+// Aplica buffs de corrupción a un enemigo
+export function applyCorruptionToEnemy(enemy: Enemy, corruption: number): Enemy {
+  const level = getCorruptionLevel(corruption);
+  return {
+    ...enemy,
+    health: enemy.health + level.enemy_health,
+    max_health: enemy.max_health + level.enemy_health,
+    damage: enemy.damage + level.enemy_damage,
+    armor: enemy.armor + level.enemy_armor,
+  };
 }
 
 export function createDefaultGameState(): GameState {
@@ -228,5 +370,57 @@ export function createDefaultGameState(): GameState {
     zones: [],
     explored_zones: [],
     events_resolved: [],
+    key_decisions: [],
+    active_states: [],
+  };
+}
+
+// Convierte atributos D&D (3-18) a nuevo sistema (1-5)
+export function convertDndToNewSystem(dndValue: number): number {
+  // 3-6 = 1, 7-9 = 2, 10-12 = 3, 13-15 = 4, 16+ = 5
+  if (dndValue <= 6) return 1;
+  if (dndValue <= 9) return 2;
+  if (dndValue <= 12) return 3;
+  if (dndValue <= 15) return 4;
+  return 5;
+}
+
+// Crea un personaje con los nuevos atributos a partir de los datos del creador
+export function createCharacterFromCreator(data: {
+  name: string;
+  race: string;
+  class: string;
+  agility: number;
+  strength: number;
+  intelligence: number;
+  willpower: number;
+  background: string;
+}): Partial<Character> {
+  const baseHealth = 10 + data.strength; // Vida base + fuerza
+  
+  return {
+    name: data.name,
+    race: data.race,
+    class: data.class,
+    level: 1,
+    health: baseHealth,
+    max_health: baseHealth,
+    base_damage: 1 + Math.floor(data.strength / 2),
+    armor: 0,
+    agility: data.agility,
+    strength: data.strength,
+    intelligence: data.intelligence,
+    willpower: data.willpower,
+    // Legacy fields
+    dexterity: data.agility * 3 + 1,
+    constitution: data.strength * 3 + 1,
+    wisdom: data.willpower * 3 + 1,
+    charisma: 10,
+    skills: [],
+    inventory: [],
+    equipment: {},
+    gold: 50,
+    experience: 0,
+    background: data.background,
   };
 }

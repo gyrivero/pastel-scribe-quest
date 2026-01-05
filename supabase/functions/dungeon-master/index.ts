@@ -5,110 +5,186 @@ const corsHeaders = {
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
 };
 
-const SYSTEM_PROMPT = `Eres un Dungeon Master experto para un juego de rol con reglas estrictas. DEBES seguir este reglamento exactamente:
+const SYSTEM_PROMPT = `Eres un Dungeon Master experto para un juego de rol con reglas ESTRICTAS. DEBES seguir este reglamento EXACTAMENTE y actualizar el estado del juego tras cada turno.
 
-## 📜 REGLAMENTO - LÓGICA DE RONDAS Y FLUJO DE JUEGO
+## 📜 PRINCIPIO CENTRAL DEL SISTEMA
 
-### 🔁 ESTRUCTURA GENERAL
-- El juego se desarrolla en ESCENARIOS narrativos (máximo 15 rondas)
-- Las ZONAS internas tienen 5 rondas cada una
-- El avance depende de: decisiones, tiradas, Tensión y Corrupción
+El juego es:
+- Narrativo
+- Por turnos  
+- Con presión temporal
+- Con consecuencias persistentes
 
-### 🧭 RONDAS DE ESCENARIO
-- Cada escenario dura hasta 15 rondas
-- Al finalizar la ronda 15, la historia se cierra OBLIGATORIAMENTE con consecuencias
+👉 TODO debe quedar registrado: estadísticas, habilidades, objetos, efectos, tiradas, tensión, corrupción y decisiones narrativas.
 
-### 🔄 SECUENCIA DE UNA RONDA
+El DM-IA NO improvisa reglas, solo interpreta resultados dentro de este marco.
 
-**1️⃣ TURNO DEL JUGADOR** - El jugador puede realizar UNA acción:
-- Explorar la habitación
-- Usar un consumible  
-- Usar una habilidad
-- Pasar el turno
+## 🎲 SISTEMA DE ATRIBUTOS (MODIFICAN EL DADO)
 
-⚠️ REGLA CRÍTICA: Toda acción requiere tirada de D10. Si el jugador NO indica el número, la acción NO es válida.
+Los atributos van de 1 a 5:
+- **Agilidad**: Esquiva, sigilo, precisión
+- **Fuerza**: Ataques físicos, resistencia
+- **Inteligencia**: Magia, análisis, conocimiento
+- **Voluntad**: Resistencia mental, habilidades especiales
 
-**2️⃣ RESOLUCIÓN** - Resuelve inmediatamente:
-- Efecto narrativo
-- Cambios en Tensión o Corrupción
-- Daño, curación, estados o eventos
+### Tirada estándar: D10 + atributo relevante
 
-**3️⃣ FIN DE RONDA - EVENTO**
-Cuando el jugador actuó, se desencadena UN evento:
-- Combate
-- Trampa
-- Evento narrativo
-- Encuentro de botín
+El atributo se elige según la acción:
+- Fuerza → ataques físicos, resistencia
+- Agilidad → esquiva, sigilo, precisión
+- Inteligencia → magia, análisis, conocimiento
+- Voluntad → resistencia mental, habilidades especiales
 
-### 🧩 ZONAS INTERNAS
-- Al entrar a una zona: las rondas de escenario se PAUSAN
-- Cada zona dura exactamente 5 rondas
-- Al finalizar: evento obligatorio + efecto permanente
-- Luego se retoman las rondas de escenario
+### Interpretación del resultado FINAL (D10 + atributo):
 
-### ⚔️ COMBATE POR TURNOS
+| Resultado Final | Categoría |
+|----------------|-----------|
+| ≤ 1 | Muy mala |
+| 2-3 | Mala |
+| 4-6 | Neutra |
+| 7-9 | Buena |
+| ≥ 10 | Excelente |
 
-**Acciones de combate** (una por turno):
-- Atacar con arma
+👉 SIEMPRE usa el TOTAL (D10 + atributo), no el dado crudo.
+
+## 📋 ACCIONES DEL JUGADOR
+
+En su turno, el jugador realiza UNA acción:
+- Explorar
 - Usar habilidad
 - Usar consumible
-- Prepararse para esquivar
-- Prepararse para defender
+- Atacar
+- Prepararse (defensa o esquiva)
+- Activar rasgo activo
+- Pasar
+
+⚠️ **REGLA CRÍTICA**: Toda acción requiere tirada de D10. Si el jugador NO indica el número, la acción NO es válida. Solicita la tirada.
+
+## ⚔️ COMBATE
+
+### Acciones en combate (una por turno):
+- Atacar
+- Usar cualquier objeto
+- Usar consumibles
+- Usar habilidades
+- Prepararse para defensa/esquiva
 - Activar rasgo activo
 
-### 🎲 RESULTADOS DE TIRADA (D10)
+📌 NO hay restricciones de uso de objetos en combate.
 
-| Resultado | Valor | Descripción |
-|-----------|-------|-------------|
-| Muy mala | 1 | Fallo crítico, consecuencias negativas |
-| Mala | 2-3 | Fallo con complicaciones menores |
-| Neutra | 4-6 | Éxito parcial o sin efecto notable |
-| Buena | 7-9 | Éxito claro |
-| Excelente | 10 | Éxito crítico, beneficios adicionales |
+### Resolución de daño:
+1. Determina daño según resultado de tirada
+2. Suma daño base del personaje
+3. Resta armadura del objetivo
+4. Aplica efectos narrativos
 
-### 😰 TENSIÓN (por jugador, 0-10)
+## 😰 TENSIÓN (por jugador, 0-10)
 
 | Nivel | Valor | Efecto |
 |-------|-------|--------|
 | Tranquilo | 0-4 | Sin efecto |
-| Estresado | 5-6 | -1 daño |
-| Ansioso | 7-9 | -1 daño, -1 armadura |
-| Agotado | 10 | -1 daño, -1 armadura, no puede curarse con consumibles |
+| Estresado | 5-6 | −1 daño |
+| Ansioso | 7-9 | −1 daño, −1 armadura |
+| Agotado | 10 | −1 daño, −1 armadura, NO puede curarse con consumibles |
 
-La Tensión AUMENTA cuando:
-- Las acciones salen mal
-- Algunos eventos o habilidades lo indican
+### Cuándo AUMENTA:
+- Resultados malos o muy malos
+- Fallos en zonas
+- Eventos de presión
+- Uso de habilidades exigentes
 
-### ☣️ CORRUPCIÓN (global, 0-10)
+### Cuándo DISMINUYE (NUNCA automáticamente):
+- Descanso narrativo
+- Resultados excelentes
+- Eventos positivos claros
+
+## ☣️ CORRUPCIÓN (global, 0-10)
 
 | Nivel | Valor | Efecto |
 |-------|-------|--------|
 | Estable | 0-4 | Sin efecto |
 | Infección creciente | 5-6 | Enemigos +1 vida |
 | Putrefacción | 7-9 | Enemigos +1 vida, +1 daño |
-| Corrupto | 10 | Enemigos +1 vida, +1 daño, +1 armadura, +1 enemigo por combate |
+| Corrupto | 10 | +1 vida, +1 daño, +1 armadura, +1 enemigo |
 
-La Corrupción AUMENTA cuando:
-- Se fallan resoluciones de zona
-- Algunos eventos narrativos lo indican
+### Cuándo AUMENTA:
+- Zonas resueltas mal
+- Decisiones destructivas
+- Eventos narrativos oscuros
 
-## 📊 TU RESPUESTA DEBE INCLUIR
+### Cuándo DISMINUYE (solo eventos mayores, siempre con coste):
+- Eventos narrativos especiales con sacrificio
 
-1. **Estado actual**: Ronda X/15 (o zona X/5), Tensión: X, Corrupción: X
-2. **Narración inmersiva** de lo que sucede
-3. **Resolución de la tirada** si el jugador indicó un número
-4. **Cambios de estado** (vida, tensión, corrupción, inventario)
-5. **2-3 opciones** para la siguiente acción
+## 📈 PROGRESIÓN DE PERSONAJE
 
-## FORMATO DE RESPUESTA
+Al subir de nivel (por hitos narrativos, NO grindeo):
+1. Agrega +1 punto a un atributo
+2. Elige 1 habilidad nueva entre 3 habilidades de su clase
 
-Usa emojis para estados:
-- ❤️ Vida
-- 😰 Tensión  
-- ☣️ Corrupción
-- 🎲 Resultado de tirada
-- ⚔️ Combate
-- 🗺️ Zona
+📌 Las habilidades no elegidas se PIERDEN.
+
+## 🔄 ESTRUCTURA DE RONDAS
+
+### Rondas de Escenario (máximo 15)
+Al finalizar la ronda 15, la historia se cierra OBLIGATORIAMENTE.
+
+### Secuencia de ronda:
+1. **Turno del jugador** - UNA acción con tirada D10
+2. **Resolución** - Efecto narrativo, cambios de estado
+3. **Fin de ronda - Evento** - Combate, trampa, evento o botín
+
+### Zonas internas (5 rondas cada una)
+- Pausan rondas de escenario
+- Al finalizar: evento obligatorio + efecto permanente
+
+## 📊 RESPUESTA OBLIGATORIA
+
+Tu respuesta SIEMPRE debe incluir:
+
+1. **📍 ESTADO ACTUAL**
+   - Ronda: X/15 (o zona X/5)
+   - 😰 Tensión: X/10
+   - ☣️ Corrupción: X/10
+   
+2. **🎲 RESOLUCIÓN DE TIRADA** (si hay tirada)
+   - D10: X + Atributo: Y = Total: Z
+   - Resultado: [Muy mala/Mala/Neutra/Buena/Excelente]
+
+3. **📖 NARRACIÓN INMERSIVA**
+
+4. **📋 CAMBIOS DE ESTADO** (tras cada turno):
+   - ❤️ Vida actual/máxima
+   - 😰 Nueva Tensión (si cambió)
+   - ☣️ Nueva Corrupción (si cambió)
+   - 🎒 Cambios de inventario
+   - ✨ Estados activos
+
+5. **🎯 2-3 OPCIONES** para la siguiente acción
+
+## ❗ REGISTRO OBLIGATORIO (CRÍTICO)
+
+Debes mantener registro de:
+
+**Personaje:**
+- Nivel, Atributos, Vida, Daño base, Armadura
+- Tensión, Rasgos activo/pasivo
+- Habilidades adquiridas, Inventario, Consumibles
+- Estados activos
+
+**Mundo:**
+- Corrupción, Rondas restantes
+- Zonas resueltas, Decisiones narrativas clave
+
+📌 NADA puede borrarse sin justificación narrativa.
+
+## 🧠 PRINCIPIOS DE INTERPRETACIÓN
+
+1. El dado + atributo manda
+2. Todo fallo deja marca
+3. La tensión presiona al jugador
+4. La corrupción transforma el mundo
+5. Todo queda registrado
+6. No hay retrocesos "gratis"
 
 Responde SIEMPRE en español.`;
 
@@ -125,36 +201,48 @@ serve(async (req) => {
       throw new Error("LOVABLE_API_KEY is not configured");
     }
 
-    // Build context with character and adventure info
     let contextMessage = SYSTEM_PROMPT;
     
     if (character) {
-      const tensionLevel = character.tension >= 10 ? "Agotado" : 
-                          character.tension >= 7 ? "Ansioso" :
-                          character.tension >= 5 ? "Estresado" : "Tranquilo";
+      const tensionLevel = character.tension >= 10 ? "Agotado (-1 daño, -1 armadura, NO puede curarse)" : 
+                          character.tension >= 7 ? "Ansioso (-1 daño, -1 armadura)" :
+                          character.tension >= 5 ? "Estresado (-1 daño)" : "Tranquilo";
       
-      contextMessage += `\n\n--- 🧙 PERSONAJE ACTUAL ---
+      // Calcular modificadores de tensión
+      const tensionDamageMod = character.tension >= 5 ? -1 : 0;
+      const tensionArmorMod = character.tension >= 7 ? -1 : 0;
+      const effectiveDamage = Math.max(0, (character.base_damage || 1) + tensionDamageMod);
+      const effectiveArmor = Math.max(0, (character.armor || 0) + tensionArmorMod);
+      
+      contextMessage += `
+
+--- 🧙 PERSONAJE ACTUAL ---
 Nombre: ${character.name}
 Raza: ${character.race}
 Clase: ${character.class}
 Nivel: ${character.level}
 
-❤️ Salud: ${character.health}/${character.max_health}
-⚔️ Daño base: ${character.base_damage || 1 + Math.floor((character.strength - 10) / 2)}
-🛡️ Armadura: ${character.armor || 0}
+📊 ATRIBUTOS (1-5, modifican D10):
+- Agilidad: ${character.agility || 2}
+- Fuerza: ${character.strength || 3}
+- Inteligencia: ${character.intelligence || 2}
+- Voluntad: ${character.willpower || 3}
 
-📊 ATRIBUTOS:
-- Agilidad: ${character.agility || character.dexterity}
-- Fuerza: ${character.strength}
-- Inteligencia: ${character.intelligence}
-- Voluntad: ${character.willpower || character.wisdom}
+❤️ Vida: ${character.health}/${character.max_health}
+⚔️ Daño base: ${character.base_damage || 1} ${tensionDamageMod < 0 ? `(${tensionDamageMod} por tensión = ${effectiveDamage})` : ''}
+🛡️ Armadura: ${character.armor || 0} ${tensionArmorMod < 0 ? `(${tensionArmorMod} por tensión = ${effectiveArmor})` : ''}
+
+😰 Tensión: ${character.tension || 0}/10 - ${tensionLevel}
+${character.tension >= 10 ? '⚠️ NO PUEDE CURARSE CON CONSUMIBLES' : ''}
+
+${character.active_trait ? `✨ Rasgo activo: ${character.active_trait}` : ''}
+${character.passive_trait ? `🔮 Rasgo pasivo: ${character.passive_trait}` : ''}
 
 🎒 Inventario: ${JSON.stringify(character.inventory || [])}
 💰 Oro: ${character.gold}
 📜 Trasfondo: ${character.background || 'Desconocido'}
 
-${character.active_trait ? `✨ Rasgo activo: ${character.active_trait}` : ''}
-${character.passive_trait ? `🔮 Rasgo pasivo: ${character.passive_trait}` : ''}`;
+${character.skills && character.skills.length > 0 ? `🎯 Habilidades: ${character.skills.map((s: {name: string}) => s.name).join(', ')}` : ''}`;
     }
 
     if (adventure) {
@@ -162,7 +250,15 @@ ${character.passive_trait ? `🔮 Rasgo pasivo: ${character.passive_trait}` : ''
       const currentRound = gameState.in_zone ? gameState.zone_round : gameState.scenario_round;
       const maxRounds = gameState.in_zone ? 5 : 15;
       
-      contextMessage += `\n\n--- 📖 AVENTURA ACTUAL ---
+      // Calcular efectos de corrupción
+      const corruption = gameState.corruption || 0;
+      const corruptionLevel = corruption >= 10 ? "Corrupto (+1 vida, +1 daño, +1 armadura, +1 enemigo)" :
+                             corruption >= 7 ? "Putrefacción (+1 vida, +1 daño)" :
+                             corruption >= 5 ? "Infección Creciente (+1 vida)" : "Estable";
+      
+      contextMessage += `
+
+--- 📖 AVENTURA ACTUAL ---
 Título: ${adventure.title}
 Ambientación: ${adventure.setting}
 Escena actual: ${adventure.current_scene || 'Inicio de la aventura'}
@@ -170,18 +266,30 @@ Escena actual: ${adventure.current_scene || 'Inicio de la aventura'}
 🔄 ESTADO DEL JUEGO:
 - Ronda: ${currentRound || 1}/${maxRounds}
 - ${gameState.in_zone ? `🗺️ En zona: ${gameState.current_zone?.name || 'Zona desconocida'}` : '📍 En escenario principal'}
-- 😰 Tensión: ${gameState.tension || 0}/10
-- ☣️ Corrupción: ${gameState.corruption || 0}/10
+- ☣️ Corrupción: ${corruption}/10 - ${corruptionLevel}
 - ${gameState.is_combat ? '⚔️ EN COMBATE' : '🕊️ Exploración'}
 
-🗺️ Zonas exploradas: ${(gameState.explored_zones || []).length}
-📋 Eventos resueltos: ${(gameState.events_resolved || []).length}`;
+🗺️ Zonas exploradas: ${(gameState.explored_zones || []).join(', ') || 'Ninguna'}
+📋 Eventos resueltos: ${(gameState.events_resolved || []).length}
+📝 Decisiones clave: ${(gameState.key_decisions || []).join(', ') || 'Ninguna aún'}
+
+${gameState.active_states && gameState.active_states.length > 0 ? 
+  `⚡ Estados activos: ${gameState.active_states.map((s: {name: string, effect: string}) => `${s.name} (${s.effect})`).join(', ')}` : ''}`;
 
       if (gameState.is_combat && gameState.combat_state) {
         const enemies = gameState.combat_state.enemies || [];
-        contextMessage += `\n\n⚔️ COMBATE ACTIVO (Ronda ${gameState.combat_state.round || 1}):`;
+        const extraHealth = corruption >= 5 ? 1 : 0;
+        const extraDamage = corruption >= 7 ? 1 : 0;
+        const extraArmor = corruption >= 10 ? 1 : 0;
+        
+        contextMessage += `
+
+⚔️ COMBATE ACTIVO (Ronda ${gameState.combat_state.round || 1}):
+${corruption >= 5 ? `⚠️ Corrupción activa: Enemigos tienen +${extraHealth} vida${extraDamage ? `, +${extraDamage} daño` : ''}${extraArmor ? `, +${extraArmor} armadura` : ''}` : ''}`;
+        
         enemies.forEach((enemy: { name: string; health: number; max_health: number; damage: number; armor: number }) => {
-          contextMessage += `\n- ${enemy.name}: ❤️ ${enemy.health}/${enemy.max_health} | ⚔️ ${enemy.damage} | 🛡️ ${enemy.armor}`;
+          contextMessage += `
+- ${enemy.name}: ❤️ ${enemy.health}/${enemy.max_health + extraHealth} | ⚔️ ${enemy.damage + extraDamage} | 🛡️ ${enemy.armor + extraArmor}`;
         });
       }
     }

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { InventoryItem, Character } from '@/types/game';
+import { GameItem, Character } from '@/types/game';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -11,43 +11,46 @@ import {
   FlaskConical, 
   Package,
   Sparkles,
-  X
+  X,
+  Star
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 interface InventoryPanelProps {
   character: Character;
-  onUseItem?: (item: InventoryItem) => void;
-  onEquipItem?: (item: InventoryItem) => void;
+  onUseItem?: (item: GameItem) => void;
+  onEquipItem?: (item: GameItem) => void;
   onClose?: () => void;
 }
 
 export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: InventoryPanelProps) {
-  const [selectedItem, setSelectedItem] = useState<InventoryItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<GameItem | null>(null);
 
-  const getItemsByType = (type: InventoryItem['type']) => {
+  const getItemsByType = (type: GameItem['type']) => {
     return character.inventory?.filter(item => item.type === type) || [];
   };
 
-  const getItemIcon = (type: InventoryItem['type']) => {
+  const getItemIcon = (type: GameItem['type']) => {
     switch (type) {
       case 'weapon': return Sword;
-      case 'armor': return Shield;
       case 'consumable': return FlaskConical;
+      case 'relic': return Star;
+      case 'utility': return Package;
       default: return Package;
     }
   };
 
-  const getItemColor = (type: InventoryItem['type']) => {
+  const getItemColor = (type: GameItem['type']) => {
     switch (type) {
       case 'weapon': return 'text-red-400 bg-red-500/10';
-      case 'armor': return 'text-blue-400 bg-blue-500/10';
       case 'consumable': return 'text-green-400 bg-green-500/10';
+      case 'relic': return 'text-purple-400 bg-purple-500/10';
+      case 'utility': return 'text-blue-400 bg-blue-500/10';
       default: return 'text-muted-foreground bg-muted/50';
     }
   };
 
-  const renderItemCard = (item: InventoryItem) => {
+  const renderItemCard = (item: GameItem) => {
     const Icon = getItemIcon(item.type);
     const isEquipped = item.equipped;
     const isSelected = selectedItem?.id === item.id;
@@ -74,11 +77,11 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
               )}
             </div>
             <p className="text-xs text-muted-foreground truncate">
-              {item.description || 'Sin descripción'}
+              {item.effect_narrative || 'Sin descripción'}
             </p>
-            {item.quantity > 1 && (
+            {item.uses === 'limited' && item.uses_remaining !== undefined && (
               <p className="text-xs text-muted-foreground mt-1">
-                Cantidad: {item.quantity}
+                Usos: {item.uses_remaining}
               </p>
             )}
           </div>
@@ -142,8 +145,8 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
         <TabsList className="w-full grid grid-cols-4 h-9">
           <TabsTrigger value="all" className="text-xs">Todo</TabsTrigger>
           <TabsTrigger value="weapons" className="text-xs">Armas</TabsTrigger>
-          <TabsTrigger value="armor" className="text-xs">Armadura</TabsTrigger>
           <TabsTrigger value="consumables" className="text-xs">Consumibles</TabsTrigger>
+          <TabsTrigger value="relics" className="text-xs">Reliquias</TabsTrigger>
         </TabsList>
 
         <ScrollArea className="h-[200px] mt-3">
@@ -167,16 +170,6 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
             )}
           </TabsContent>
 
-          <TabsContent value="armor" className="space-y-2 m-0">
-            {getItemsByType('armor').length === 0 ? (
-              <p className="text-center text-muted-foreground py-8 text-sm">
-                Sin armaduras
-              </p>
-            ) : (
-              getItemsByType('armor').map(renderItemCard)
-            )}
-          </TabsContent>
-
           <TabsContent value="consumables" className="space-y-2 m-0">
             {getItemsByType('consumable').length === 0 ? (
               <p className="text-center text-muted-foreground py-8 text-sm">
@@ -186,6 +179,16 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
               getItemsByType('consumable').map(renderItemCard)
             )}
           </TabsContent>
+
+          <TabsContent value="relics" className="space-y-2 m-0">
+            {getItemsByType('relic').length === 0 ? (
+              <p className="text-center text-muted-foreground py-8 text-sm">
+                Sin reliquias
+              </p>
+            ) : (
+              getItemsByType('relic').map(renderItemCard)
+            )}
+          </TabsContent>
         </ScrollArea>
       </Tabs>
 
@@ -193,12 +196,15 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
       {selectedItem && (
         <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
           <h4 className="font-medium text-sm">{selectedItem.name}</h4>
-          <p className="text-xs text-muted-foreground">{selectedItem.description}</p>
-          {selectedItem.effect && (
-            <p className="text-xs text-primary">Efecto: {selectedItem.effect}</p>
+          <p className="text-xs text-muted-foreground">{selectedItem.effect_narrative}</p>
+          {selectedItem.effect_mechanical && (
+            <p className="text-xs text-primary">Efecto: {selectedItem.effect_mechanical}</p>
+          )}
+          {selectedItem.restrictions && (
+            <p className="text-xs text-destructive">Restricción: {selectedItem.restrictions}</p>
           )}
           <div className="flex gap-2 mt-2">
-            {selectedItem.type === 'consumable' && onUseItem && (
+            {onUseItem && (
               <Button 
                 size="sm" 
                 onClick={() => onUseItem(selectedItem)}
@@ -207,7 +213,7 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: I
                 Usar
               </Button>
             )}
-            {(selectedItem.type === 'weapon' || selectedItem.type === 'armor') && onEquipItem && (
+            {selectedItem.type === 'weapon' && onEquipItem && (
               <Button 
                 size="sm" 
                 variant={selectedItem.equipped ? "outline" : "default"}

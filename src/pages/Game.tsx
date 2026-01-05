@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
-import { Character, Adventure, ChatMessage, DiceRoll, GameState, createDefaultGameState, InventoryItem, Zone } from '@/types/game';
+import { Character, Adventure, ChatMessage, DiceRoll, GameState, createDefaultGameState, GameItem, Zone, ActiveState } from '@/types/game';
 import { ChatInterface } from '@/components/ChatInterface';
 import { CharacterSheet } from '@/components/CharacterSheet';
 import { DiceRoller } from '@/components/DiceRoller';
@@ -54,6 +54,8 @@ function parseGameState(gameStateJson: unknown): GameState {
     zones: (gs.zones as Zone[]) || [],
     explored_zones: (gs.explored_zones as string[]) || [],
     events_resolved: (gs.events_resolved as string[]) || [],
+    key_decisions: (gs.key_decisions as string[]) || [],
+    active_states: (gs.active_states as ActiveState[]) || [],
   };
 }
 
@@ -90,15 +92,35 @@ export default function Game() {
       ]);
 
       if (charactersRes.data) {
-        setCharacters(charactersRes.data.map(c => ({
-          ...c,
-          inventory: Array.isArray(c.inventory) ? c.inventory : [],
-          equipment: c.inventory && typeof c.inventory === 'object' ? {} : {},
-          agility: c.dexterity || 10,
-          willpower: c.wisdom || 10,
-          base_damage: 1 + Math.floor((c.strength - 10) / 2),
-          armor: 0,
-        })) as unknown as Character[]);
+        setCharacters(charactersRes.data.map(c => {
+          // Convert D&D-style attributes (3-18) to new system (1-5) if needed
+          const convertAttr = (val: number) => {
+            if (val <= 5) return val; // Already in new system
+            if (val <= 6) return 1;
+            if (val <= 9) return 2;
+            if (val <= 12) return 3;
+            if (val <= 15) return 4;
+            return 5;
+          };
+          
+          const agility = convertAttr(c.dexterity || 2);
+          const strength = convertAttr(c.strength || 3);
+          const intelligence = convertAttr(c.intelligence || 2);
+          const willpower = convertAttr(c.wisdom || 3);
+          
+          return {
+            ...c,
+            inventory: Array.isArray(c.inventory) ? c.inventory : [],
+            equipment: {},
+            skills: [],
+            agility,
+            strength,
+            intelligence,
+            willpower,
+            base_damage: 1 + Math.floor(strength / 2),
+            armor: 0,
+          };
+        }) as unknown as Character[]);
       }
       if (adventuresRes.data) {
         setAdventures(adventuresRes.data.map(a => ({
@@ -118,20 +140,30 @@ export default function Game() {
     name: string;
     race: string;
     class: string;
+    agility: number;
     strength: number;
-    dexterity: number;
-    constitution: number;
     intelligence: number;
-    wisdom: number;
-    charisma: number;
+    willpower: number;
     background: string;
   }) => {
     try {
-      const maxHealth = 10 + Math.floor((characterData.constitution - 10) / 2);
+      // New attribute system: health = 10 + strength
+      const maxHealth = 10 + characterData.strength;
+      const baseDamage = 1 + Math.floor(characterData.strength / 2);
       
       const { data, error } = await supabase.from('characters').insert({
         user_id: user!.id,
-        ...characterData,
+        name: characterData.name,
+        race: characterData.race,
+        class: characterData.class,
+        background: characterData.background,
+        // New attributes (1-5)
+        strength: characterData.strength,
+        dexterity: characterData.agility * 3 + 1, // Legacy conversion
+        constitution: characterData.strength * 3 + 1,
+        intelligence: characterData.intelligence,
+        wisdom: characterData.willpower * 3 + 1,
+        charisma: 10,
         health: maxHealth,
         max_health: maxHealth,
         inventory: [],
@@ -139,7 +171,20 @@ export default function Game() {
 
       if (error) throw error;
       
-      const newCharacter = { ...data, inventory: [] } as Character;
+      // Create character object with new system
+      const newCharacter: Character = {
+        ...data,
+        inventory: [],
+        equipment: {},
+        skills: [],
+        agility: characterData.agility,
+        strength: characterData.strength,
+        intelligence: characterData.intelligence,
+        willpower: characterData.willpower,
+        base_damage: baseDamage,
+        armor: 0,
+      } as Character;
+      
       setCharacters([newCharacter, ...characters]);
       setView('home');
       toast.success(`¡${characterData.name} ha sido creado!`);
@@ -219,11 +264,11 @@ export default function Game() {
     toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D10.`);
   };
 
-  const handleUseItem = (item: InventoryItem) => {
+  const handleUseItem = (item: GameItem) => {
     toast.info(`Usando ${item.name}. Describe la acción en el chat.`);
   };
 
-  const handleEquipItem = (item: InventoryItem) => {
+  const handleEquipItem = (item: GameItem) => {
     if (!currentCharacter) return;
     // Toggle equip state
     const updatedInventory = currentCharacter.inventory.map(i => 
@@ -261,8 +306,14 @@ export default function Game() {
     }
   };
 
-  const handleDiceRoll = (dice: string, result: number) => {
-    setLastDiceRoll({ dice, result, total: result });
+  const handleDiceRoll = (dice: string, result: number, attribute?: string, modifier?: number, total?: number) => {
+    setLastDiceRoll({ 
+      dice, 
+      result, 
+      attribute,
+      modifier,
+      total: total || result 
+    });
   };
 
   const handleSignOut = async () => {
@@ -359,7 +410,7 @@ export default function Game() {
                     {currentCharacter && (
                       <CharacterSheet character={currentCharacter} />
                     )}
-                    <DiceRoller onRoll={handleDiceRoll} />
+                    <DiceRoller onRoll={handleDiceRoll} character={currentCharacter} />
                   </TabsContent>
 
                   <TabsContent value="inventory" className="m-0">
