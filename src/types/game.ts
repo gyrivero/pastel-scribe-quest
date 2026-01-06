@@ -1,6 +1,6 @@
 // ============= SISTEMA DE REGLAS CONSOLIDADO (VERSIÓN DM-IA) =============
 
-// ATRIBUTOS: Valores 1-5 (modifican la tirada D10)
+// ATRIBUTOS: Valores 1-5 (modifican la tirada D20)
 export interface CharacterAttributes {
   agility: number;    // Esquiva, sigilo, precisión
   strength: number;   // Ataques físicos, resistencia
@@ -221,20 +221,37 @@ export const RACES = [
   'Dracónido',
 ] as const;
 
+// Clases definidas del sistema
 export const CLASSES = [
-  'Guerrero',
-  'Mago',
-  'Pícaro',
-  'Clérigo',
-  'Paladín',
-  'Ranger',
-  'Bardo',
-  'Druida',
-  'Monje',
-  'Brujo',
+  'Soldado',
   'Hechicero',
-  'Bárbaro',
+  'Cazador',
+  'Merodeador',
 ] as const;
+
+// Definición de clases con atributos recomendados
+export const CLASS_INFO = {
+  'Soldado': {
+    description: 'Guerrero resistente especializado en combate cuerpo a cuerpo',
+    recommended: 'Fuerza alta recomendada',
+    primary: 'strength',
+  },
+  'Hechicero': {
+    description: 'Maestro de las artes arcanas y la magia',
+    recommended: 'Inteligencia alta recomendada',
+    primary: 'intelligence',
+  },
+  'Cazador': {
+    description: 'Experto en rastreo, arcos y combate a distancia',
+    recommended: 'Agilidad alta recomendada',
+    primary: 'agility',
+  },
+  'Merodeador': {
+    description: 'Sigiloso y astuto, maestro del engaño y el sigilo',
+    recommended: 'Agilidad y Voluntad recomendadas',
+    primary: 'agility',
+  },
+} as const;
 
 export const SETTINGS = [
   'Fantasía Medieval',
@@ -293,12 +310,12 @@ export const CORRUPTION_LEVELS = [
 
 // ============= FUNCIONES DE UTILIDAD =============
 
-// Interpreta el resultado FINAL (D10 + atributo)
+// Interpreta el resultado FINAL (D20 + atributo)
 export function getDiceOutcome(total: number): DiceOutcome {
-  if (total <= 1) return 'muy_mala';
-  if (total <= 3) return 'mala';
-  if (total <= 6) return 'neutra';
-  if (total <= 9) return 'buena';
+  if (total <= 5) return 'muy_mala';
+  if (total <= 9) return 'mala';
+  if (total <= 14) return 'neutra';
+  if (total <= 19) return 'buena';
   return 'excelente';
 }
 
