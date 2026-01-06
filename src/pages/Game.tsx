@@ -41,14 +41,11 @@ function parseGameState(gameStateJson: unknown): GameState {
   const gs = gameStateJson as Record<string, unknown>;
   return {
     scenario_round: (gs.scenario_round as number) || 1,
-    max_scenario_rounds: (gs.max_scenario_rounds as number) || 25,
+    max_scenario_rounds: (gs.max_scenario_rounds as number) || 15,
     zone_round: (gs.zone_round as number) || 0,
     max_zone_rounds: (gs.max_zone_rounds as number) || 5,
     in_zone: (gs.in_zone as boolean) || false,
     current_zone: gs.current_zone as Zone | undefined,
-    active_character_id: gs.active_character_id as string | undefined,
-    party_order: (gs.party_order as string[]) || [],
-    current_turn_index: (gs.current_turn_index as number) ?? 0,
     tension: (gs.tension as number) || 0,
     corruption: (gs.corruption as number) || 0,
     turn_phase: (gs.turn_phase as GameState['turn_phase']) || 'player_action',
@@ -70,8 +67,6 @@ export default function Game() {
   const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [currentAdventure, setCurrentAdventure] = useState<Adventure | null>(null);
-  const [partyIds, setPartyIds] = useState<string[]>([]);
-  const [activeCharacterId, setActiveCharacterId] = useState<string | null>(null);
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastDiceRoll, setLastDiceRoll] = useState<DiceRoll | null>(null);
   const [loading, setLoading] = useState(true);
@@ -82,15 +77,6 @@ export default function Game() {
       navigate('/auth');
     }
   }, [user, authLoading, navigate]);
-
-  useEffect(() => {
-    if (activeCharacterId) {
-      const partyCharacter = characters.find(c => c.id === activeCharacterId);
-      if (partyCharacter) {
-        setCurrentCharacter(partyCharacter);
-      }
-    }
-  }, [activeCharacterId, characters]);
 
   useEffect(() => {
     if (user) {
@@ -137,19 +123,10 @@ export default function Game() {
         }) as unknown as Character[]);
       }
       if (adventuresRes.data) {
-        setAdventures(adventuresRes.data.map(a => {
-          const parsedState = parseGameState(a.game_state);
-          const storedParty = (a.party_ids as string[] | null) || (a.character_id ? [a.character_id] : []);
-          return {
-            ...a,
-            party_ids: storedParty,
-            game_state: {
-              ...parsedState,
-              party_order: parsedState.party_order?.length ? parsedState.party_order : storedParty,
-              active_character_id: parsedState.active_character_id || storedParty[0],
-            },
-          };
-        }) as Adventure[]);
+        setAdventures(adventuresRes.data.map(a => ({
+          ...a,
+          game_state: parseGameState(a.game_state),
+        })) as Adventure[]);
       }
     } catch (error) {
       console.error('Error loading data:', error);
@@ -221,21 +198,17 @@ export default function Game() {
     title: string;
     description: string;
     setting: string;
-    party_ids: string[];
+    character_id: string | null;
   }) => {
     try {
       const initialGameState = createDefaultGameState();
-      const partyOrder = adventureData.party_ids;
-      initialGameState.party_order = partyOrder;
-      initialGameState.active_character_id = partyOrder[0];
-
+      
       const { data, error } = await supabase.from('adventures').insert([{
         user_id: user!.id,
         title: adventureData.title,
         description: adventureData.description,
         setting: adventureData.setting,
-        character_id: adventureData.party_ids[0] || null,
-        party_ids: adventureData.party_ids,
+        character_id: adventureData.character_id,
         game_state: JSON.parse(JSON.stringify(initialGameState)),
       }]).select().single();
 
@@ -245,14 +218,11 @@ export default function Game() {
         ...data,
         game_state: parseGameState(data.game_state),
       } as Adventure;
-      const selectedParty = adventureData.party_ids;
       setAdventures([newAdventure, ...adventures]);
-
+      
       // Start playing the new adventure
-      const character = characters.find(c => c.id === selectedParty[0]);
+      const character = characters.find(c => c.id === adventureData.character_id);
       setCurrentAdventure(newAdventure);
-      setPartyIds(selectedParty);
-      setActiveCharacterId(selectedParty[0] || null);
       setCurrentCharacter(character || null);
       setMessages([]);
       setView('playing');
@@ -264,20 +234,8 @@ export default function Game() {
   };
 
   const continueAdventure = async (adventure: Adventure) => {
-    const party = adventure.party_ids?.length ? adventure.party_ids : adventure.character_id ? [adventure.character_id] : [];
-    const hydratedAdventure = {
-      ...adventure,
-      party_ids: party,
-      game_state: {
-        ...adventure.game_state,
-        party_order: adventure.game_state.party_order?.length ? adventure.game_state.party_order : party,
-        active_character_id: adventure.game_state.active_character_id || party[0],
-      },
-    };
-    const character = characters.find(c => c.id === (hydratedAdventure.game_state.active_character_id || party[0]));
-    setCurrentAdventure(hydratedAdventure);
-    setPartyIds(party);
-    setActiveCharacterId(hydratedAdventure.game_state.active_character_id || party[0] || null);
+    const character = characters.find(c => c.id === adventure.character_id);
+    setCurrentAdventure(adventure);
     setCurrentCharacter(character || null);
     
     // Load story logs
@@ -303,25 +261,7 @@ export default function Game() {
 
   const handleAction = (actionId: string) => {
     // This will be used to pre-fill actions in the chat
-    toast.info(`Acción: ${actionId}. Describe una única intención y añade el resultado del D20.`);
-  };
-
-  const advanceTurn = () => {
-    if (!partyIds.length) return;
-    const currentIndex = partyIds.findIndex(id => id === activeCharacterId);
-    const nextIndex = (currentIndex + 1) % partyIds.length;
-    const nextId = partyIds[nextIndex] || partyIds[0];
-    setActiveCharacterId(nextId);
-    setCurrentAdventure((prev) => prev ? {
-      ...prev,
-      game_state: {
-        ...prev.game_state,
-        active_character_id: nextId,
-        party_order: partyIds,
-        current_turn_index: nextIndex,
-      },
-    } : prev);
-    toast.success('Turno avanzado al siguiente personaje');
+    toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D10.`);
   };
 
   const handleUseItem = (item: GameItem) => {
@@ -338,29 +278,6 @@ export default function Game() {
     toast.success(item.equipped ? `${item.name} desequipado` : `${item.name} equipado`);
   };
 
-  const persistInventory = async (characterId: string, inventory: GameItem[]) => {
-    try {
-      await supabase.from('characters').update({ inventory }).eq('id', characterId);
-    } catch (error) {
-      console.error('Error updating inventory', error);
-      toast.error('No se pudo guardar el inventario');
-    }
-  };
-
-  const handleAddItem = async (item: Omit<GameItem, 'id'>) => {
-    if (!currentCharacter) return;
-    const newItem: GameItem = {
-      ...item,
-      id: crypto.randomUUID ? crypto.randomUUID() : Math.random().toString(36).slice(2),
-    };
-    const updatedInventory = [...(currentCharacter.inventory || []), newItem];
-
-    setCurrentCharacter({ ...currentCharacter, inventory: updatedInventory });
-    setCharacters(prev => prev.map(c => c.id === currentCharacter.id ? { ...c, inventory: updatedInventory } : c));
-    toast.success(`${newItem.name} añadido al inventario`);
-    await persistInventory(currentCharacter.id, updatedInventory);
-  };
-
   const handleSelectZone = (zone: Zone) => {
     toast.info(`Zona seleccionada: ${zone.name}. Describe tu acción en el chat.`);
   };
@@ -371,7 +288,7 @@ export default function Game() {
     if (newMessages.length > 0 && currentAdventure) {
       const lastMessage = newMessages[newMessages.length - 1];
       const diceRollData = lastDiceRoll ? {
-        dice: 'd20',
+        dice: lastDiceRoll.dice,
         result: lastDiceRoll.result,
         total: lastDiceRoll.total,
       } : null;
@@ -390,12 +307,12 @@ export default function Game() {
   };
 
   const handleDiceRoll = (dice: string, result: number, attribute?: string, modifier?: number, total?: number) => {
-    setLastDiceRoll({
-      dice: 'd20',
-      result,
+    setLastDiceRoll({ 
+      dice, 
+      result, 
       attribute,
       modifier,
-      total: total || result
+      total: total || result 
     });
   };
 
@@ -440,9 +357,6 @@ export default function Game() {
 
   if (view === 'playing') {
     const gameState = currentAdventure?.game_state || createDefaultGameState();
-    const partyCharacters = partyIds.map(id => characters.find(c => c.id === id)).filter(Boolean) as Character[];
-    const activeCharacter = activeCharacterId ? partyCharacters.find(c => c.id === activeCharacterId) : null;
-    const characterForPlay = activeCharacter || currentCharacter;
 
     return (
       <div className="min-h-screen flex flex-col bg-background">
@@ -461,9 +375,9 @@ export default function Game() {
                 <h1 className="font-fantasy text-lg font-semibold line-clamp-1">
                   {currentAdventure?.title}
                 </h1>
-                {activeCharacter && (
+                {currentCharacter && (
                   <p className="text-xs text-muted-foreground">
-                    {activeCharacter.name} • Ronda {gameState.in_zone ? gameState.zone_round : gameState.scenario_round}
+                    {currentCharacter.name} • Ronda {gameState.in_zone ? gameState.zone_round : gameState.scenario_round}
                   </p>
                 )}
               </div>
@@ -493,19 +407,18 @@ export default function Game() {
                   </TabsList>
 
                   <TabsContent value="character" className="space-y-4 m-0">
-                    {characterForPlay && (
-                      <CharacterSheet character={characterForPlay} />
+                    {currentCharacter && (
+                      <CharacterSheet character={currentCharacter} />
                     )}
-                    <DiceRoller onRoll={handleDiceRoll} character={characterForPlay} />
+                    <DiceRoller onRoll={handleDiceRoll} character={currentCharacter} />
                   </TabsContent>
 
                   <TabsContent value="inventory" className="m-0">
-                    {characterForPlay && (
-                      <InventoryPanel
-                        character={characterForPlay}
+                    {currentCharacter && (
+                      <InventoryPanel 
+                        character={currentCharacter}
                         onUseItem={handleUseItem}
                         onEquipItem={handleEquipItem}
-                        onAddItem={handleAddItem}
                       />
                     )}
                   </TabsContent>
@@ -535,36 +448,10 @@ export default function Game() {
           </div>
         </header>
 
-        {/* Party selector */}
-        {partyCharacters.length > 0 && (
-          <div className="px-4 pt-3">
-            <Card className="p-3 bg-card/80 border border-border/60 flex items-center justify-between gap-3">
-              <div className="flex flex-wrap gap-2">
-                {partyCharacters.map((pc) => (
-                  <Button
-                    key={pc.id}
-                    size="sm"
-                    variant={pc.id === activeCharacterId ? 'default' : 'outline'}
-                    onClick={() => setActiveCharacterId(pc.id)}
-                    className="text-xs"
-                  >
-                    {pc.name}
-                  </Button>
-                ))}
-              </div>
-              {partyCharacters.length > 1 && (
-                <Button size="sm" variant="secondary" onClick={advanceTurn} className="text-xs">
-                  Siguiente turno
-                </Button>
-              )}
-            </Card>
-          </div>
-        )}
-
         {/* Turn Tracker - Compact bar */}
         <div className="px-4 py-2 bg-card/50 border-b border-border">
-          <TurnTracker
-            gameState={gameState}
+          <TurnTracker 
+            gameState={gameState} 
             onAction={handleAction}
             disabled={false}
           />
@@ -573,7 +460,7 @@ export default function Game() {
         {/* Chat */}
         <main className="flex-1 p-4 pb-0 overflow-hidden">
           <ChatInterface
-            character={characterForPlay}
+            character={currentCharacter}
             adventure={currentAdventure}
             messages={messages}
             onMessagesUpdate={handleMessagesUpdate}
@@ -606,33 +493,10 @@ export default function Game() {
       </header>
 
       <main className="p-4 space-y-6">
-        <Card className="p-5 bg-gradient-to-br from-primary/10 via-background to-fantasy-sage/10 fantasy-border">
-          <div className="flex flex-col gap-3">
-            <div className="flex items-center gap-2">
-              <Menu className="w-5 h-5 text-primary" />
-              <div>
-                <p className="text-xs uppercase tracking-[0.2em] text-muted-foreground">Menú principal</p>
-                <h2 className="font-fantasy text-xl font-semibold">Crea y lanza tu aventura móvil</h2>
-              </div>
-            </div>
-            <p className="text-sm text-muted-foreground">
-              Configura personajes independientes y arranca aventuras compatibles con Android/iOS. Cada escenario dura 25 rondas y las zonas se resuelven en bloques de 5 rondas, sin acciones dobles por turno.
-            </p>
-            <div className="flex flex-wrap gap-2">
-              <Button onClick={() => setView('create-character')} className="gap-2">
-                <User className="w-4 h-4" /> Crear personaje
-              </Button>
-              <Button variant="outline" onClick={() => setView('create-adventure')} className="gap-2">
-                <Plus className="w-4 h-4" /> Iniciar aventura
-              </Button>
-            </div>
-          </div>
-        </Card>
-
         {/* Quick Actions */}
         <div className="grid grid-cols-2 gap-3">
-          <Button
-            variant="outline"
+          <Button 
+            variant="outline" 
             className="h-auto py-4 flex-col gap-2 fantasy-border hover:bg-fantasy-lavender/20"
             onClick={() => setView('create-character')}
           >

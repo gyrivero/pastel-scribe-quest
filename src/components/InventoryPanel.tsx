@@ -5,9 +5,6 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Input } from '@/components/ui/input';
-import { Label } from '@/components/ui/label';
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { 
   Sword, 
   Shield, 
@@ -23,20 +20,11 @@ interface InventoryPanelProps {
   character: Character;
   onUseItem?: (item: GameItem) => void;
   onEquipItem?: (item: GameItem) => void;
-  onAddItem?: (item: Omit<GameItem, 'id'>) => void;
   onClose?: () => void;
 }
 
-export function InventoryPanel({ character, onUseItem, onEquipItem, onAddItem, onClose }: InventoryPanelProps) {
+export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<GameItem | null>(null);
-  const [newItem, setNewItem] = useState<Omit<GameItem, 'id'>>({
-    name: '',
-    type: 'utility',
-    effect_mechanical: '',
-    effect_narrative: '',
-    uses: 'unlimited',
-    uses_remaining: undefined,
-  });
 
   const getItemsByType = (type: GameItem['type']) => {
     return character.inventory?.filter(item => item.type === type) || [];
@@ -203,81 +191,6 @@ export function InventoryPanel({ character, onUseItem, onEquipItem, onAddItem, o
           </TabsContent>
         </ScrollArea>
       </Tabs>
-
-      {onAddItem && (
-        <div className="mt-4 p-3 bg-muted/30 rounded-lg space-y-2">
-          <div className="flex items-center justify-between">
-            <h4 className="font-medium text-sm">Registrar objeto encontrado</h4>
-            <Badge variant="outline">D20</Badge>
-          </div>
-          <Label className="text-xs">Nombre</Label>
-          <Input
-            value={newItem.name}
-            onChange={(e) => setNewItem({ ...newItem, name: e.target.value })}
-            placeholder="Espada rota, Llave de cobre, Poción menor..."
-          />
-          <Label className="text-xs">Tipo</Label>
-          <Select value={newItem.type} onValueChange={(v) => setNewItem({ ...newItem, type: v as GameItem['type'] })}>
-            <SelectTrigger>
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="weapon">Arma</SelectItem>
-              <SelectItem value="consumable">Consumible</SelectItem>
-              <SelectItem value="utility">Objeto útil</SelectItem>
-              <SelectItem value="relic">Reliquia</SelectItem>
-            </SelectContent>
-          </Select>
-          <Label className="text-xs">Efecto mecánico</Label>
-          <Input
-            value={newItem.effect_mechanical}
-            onChange={(e) => setNewItem({ ...newItem, effect_mechanical: e.target.value })}
-            placeholder="Ej: +1 daño en la próxima tirada"
-          />
-          <Label className="text-xs">Efecto narrativo</Label>
-          <Input
-            value={newItem.effect_narrative}
-            onChange={(e) => setNewItem({ ...newItem, effect_narrative: e.target.value })}
-            placeholder="Ej: brilla con runas antiguas"
-          />
-          <div className="grid grid-cols-2 gap-2">
-            <div>
-              <Label className="text-xs">Usos</Label>
-              <Select value={newItem.uses} onValueChange={(v) => setNewItem({ ...newItem, uses: v as GameItem['uses'] })}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="unlimited">Ilimitado</SelectItem>
-                  <SelectItem value="limited">Limitado</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {newItem.uses === 'limited' && (
-              <div>
-                <Label className="text-xs">Usos restantes</Label>
-                <Input
-                  type="number"
-                  min={1}
-                  value={newItem.uses_remaining || 1}
-                  onChange={(e) => setNewItem({ ...newItem, uses_remaining: Number(e.target.value) })}
-                />
-              </div>
-            )}
-          </div>
-          <Button
-            size="sm"
-            className="w-full"
-            disabled={!newItem.name.trim()}
-            onClick={() => {
-              onAddItem({ ...newItem, effect_narrative: newItem.effect_narrative || 'Hallazgo registrado', uses_remaining: newItem.uses === 'limited' ? (newItem.uses_remaining || 1) : undefined });
-              setNewItem({ name: '', type: 'utility', effect_mechanical: '', effect_narrative: '', uses: 'unlimited', uses_remaining: undefined });
-            }}
-          >
-            Añadir al inventario
-          </Button>
-        </div>
-      )}
 
       {/* Selected Item Actions */}
       {selectedItem && (

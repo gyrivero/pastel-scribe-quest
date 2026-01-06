@@ -1,46 +1,58 @@
-# Pastel Scribe Quest
+# Welcome to your Lovable project
 
-## Cómo probar la app paso a paso
+## Project info
 
-Sigue estos pasos desde la raíz del repositorio (`/workspace/pastel-scribe-quest` si usas este entorno):
+**URL**: https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID
 
-1. Instala dependencias (solo la primera vez o cuando cambie `package.json`):
+## How can I edit this code?
 
-   ```sh
-   npm install
-   ```
+There are several ways of editing your application.
 
-2. Arranca el servidor de desarrollo con recarga en caliente:
+**Use Lovable**
 
-   ```sh
-   npm run dev
-   ```
+Simply visit the [Lovable Project](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and start prompting.
 
-   El terminal te mostrará la URL local (por defecto `http://localhost:5173`). Abre esa dirección en tu navegador o emulador móvil para probar la app.
+Changes made via Lovable will be committed automatically to this repo.
 
-3. Compila el proyecto para producción (opcional, para validar el build):
+**Use your preferred IDE**
 
-   ```sh
-   npm run build
-   ```
+If you want to work locally using your own IDE, you can clone this repo and push changes. Pushed changes will also be reflected in Lovable.
 
-4. Vista previa del build (opcional, tras `npm run build`):
+The only requirement is having Node.js & npm installed - [install with nvm](https://github.com/nvm-sh/nvm#installing-and-updating)
 
-   ```sh
-   npm run preview
-   ```
+Follow these steps:
 
-5. Revisa el código con el linter (opcional; hay advertencias conocidas en componentes compartidos):
+```sh
+# Step 1: Clone the repository using the project's Git URL.
+git clone <YOUR_GIT_URL>
 
-   ```sh
-   npm run lint
-   ```
+# Step 2: Navigate to the project directory.
+cd <YOUR_PROJECT_NAME>
 
-Los comandos anteriores deben ejecutarse en la carpeta raíz del proyecto. Si trabajas fuera de este entorno, sustituye la ruta raíz por la ubicación donde clonaste el repositorio.
+# Step 3: Install the necessary dependencies.
+npm i
 
-## Tecnologías principales
+# Step 4: Start the development server with auto-reloading and an instant preview.
+npm run dev
+```
 
-Este proyecto está construido con:
+**Edit a file directly in GitHub**
+
+- Navigate to the desired file(s).
+- Click the "Edit" button (pencil icon) at the top right of the file view.
+- Make your changes and commit the changes.
+
+**Use GitHub Codespaces**
+
+- Navigate to the main page of your repository.
+- Click on the "Code" button (green button) near the top right.
+- Select the "Codespaces" tab.
+- Click on "New codespace" to launch a new Codespace environment.
+- Edit files directly within the Codespace and commit and push your changes once you're done.
+
+## What technologies are used for this project?
+
+This project is built with:
 
 - Vite
 - TypeScript
@@ -48,6 +60,14 @@ Este proyecto está construido con:
 - shadcn-ui
 - Tailwind CSS
 
-## Cómo editar el código
+## How can I deploy this project?
 
-Puedes usar tu IDE local o un entorno como GitHub Codespaces. Clona el repositorio, entra en la carpeta raíz y utiliza los mismos comandos de arriba (`npm install`, `npm run dev`, etc.) para trabajar de manera interactiva.
+Simply open [Lovable](https://lovable.dev/projects/REPLACE_WITH_PROJECT_ID) and click on Share -> Publish.
+
+## Can I connect a custom domain to my Lovable project?
+
+Yes, you can!
+
+To connect a domain, navigate to Project > Settings > Domains and click Connect Domain.
+
+Read more here: [Setting up a custom domain](https://docs.lovable.dev/features/custom-domain#custom-domain)

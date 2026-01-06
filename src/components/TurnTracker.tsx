@@ -83,7 +83,6 @@ export function TurnTracker({ gameState, onAction, disabled }: TurnTrackerProps)
         <Badge variant="secondary" className="text-sm px-4 py-1">
           {getPhaseLabel(gameState.turn_phase)}
         </Badge>
-        <p className="text-[11px] text-muted-foreground mt-1">Una acción = una intención. Sin acumulaciones.</p>
       </div>
 
       {/* Tension & Corruption Meters */}

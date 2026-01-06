@@ -127,10 +127,10 @@ export function CharacterSheet({ character, compact = false, tension = 0 }: Char
           </div>
         </div>
 
-        {/* Attributes (1-5, modify D20) */}
+        {/* Attributes (1-5, modify D10) */}
         <div>
           <p className="text-sm font-medium mb-2 text-muted-foreground">
-            Atributos (modifican D20)
+            Atributos (modifican D10)
           </p>
           <div className="grid grid-cols-4 gap-2">
             {stats.map(({ id, name, value, description }) => (

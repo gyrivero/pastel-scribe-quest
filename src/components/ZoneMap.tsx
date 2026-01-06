@@ -34,26 +34,15 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
     }
   };
 
-  const resolveState = (zone: Zone): Zone['state'] => {
-    if (zone.state) return zone.state;
-    if (zone.cleared) return 'exhausted';
-    if (zone.explored) return 'explored';
-    return 'unexplored';
-  };
-
   const getZoneColor = (zone: Zone) => {
-    const state = resolveState(zone);
-    if (state === 'exhausted') return 'bg-green-500/20 border-green-500/50 text-green-400';
-    if (state === 'explored') return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400';
-    if (state === 'blocked') return 'bg-destructive/10 border-destructive/40 text-destructive';
+    if (zone.cleared) return 'bg-green-500/20 border-green-500/50 text-green-400';
+    if (zone.explored) return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400';
     if (gameState.current_zone?.id === zone.id) return 'bg-primary/30 border-primary text-primary';
     return 'bg-muted/50 border-muted-foreground/30 text-muted-foreground';
   };
 
   const isZoneAccessible = (zone: Zone) => {
-    const state = resolveState(zone);
-    if (state === 'blocked') return false;
-    if (zone.explored || zone.cleared || state === 'exhausted') return true;
+    if (zone.explored || zone.cleared) return true;
     if (!gameState.current_zone) return zone.type === 'entrance';
     return gameState.current_zone.connected_zones.includes(zone.id);
   };
@@ -79,16 +68,13 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
       {/* Legend */}
       <div className="flex flex-wrap gap-2 mb-4">
         <Badge variant="outline" className="text-xs bg-green-500/10">
-          <CheckCircle2 className="w-3 h-3 mr-1" /> Agotada
+          <CheckCircle2 className="w-3 h-3 mr-1" /> Completada
         </Badge>
         <Badge variant="outline" className="text-xs bg-yellow-500/10">
           <MapPin className="w-3 h-3 mr-1" /> Explorada
         </Badge>
         <Badge variant="outline" className="text-xs bg-muted/50">
           <Lock className="w-3 h-3 mr-1" /> Sin explorar
-        </Badge>
-        <Badge variant="outline" className="text-xs bg-destructive/10 text-destructive border-destructive/50">
-          <Lock className="w-3 h-3 mr-1" /> Bloqueada
         </Badge>
       </div>
 
@@ -141,7 +127,6 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
               const Icon = getZoneIcon(zone.type);
               const accessible = isZoneAccessible(zone);
               const isCurrent = gameState.current_zone?.id === zone.id;
-              const state = resolveState(zone);
               
               return (
                 <button
@@ -171,7 +156,6 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
               const Icon = getZoneIcon(zone.type);
               const accessible = isZoneAccessible(zone);
               const isCurrent = gameState.current_zone?.id === zone.id;
-              const state = resolveState(zone);
               
               return (
                 <div
@@ -186,7 +170,7 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
                   <div className="flex items-center gap-3">
                     <div className={cn(
                       "p-2 rounded-lg",
-                      state === 'exhausted' ? "bg-green-500/20" : state === 'explored' ? "bg-yellow-500/20" : state === 'blocked' ? "bg-destructive/20" : "bg-muted"
+                      zone.cleared ? "bg-green-500/20" : zone.explored ? "bg-yellow-500/20" : "bg-muted"
                     )}>
                       <Icon className="w-4 h-4" />
                     </div>
@@ -197,7 +181,7 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
                         {isCurrent && <Badge variant="secondary" className="text-xs">Actual</Badge>}
                       </div>
                       <p className="text-xs text-muted-foreground line-clamp-1">
-                        {state === 'unexplored' ? '???' : zone.description}
+                        {zone.explored ? zone.description : '???'}
                       </p>
                     </div>
                   </div>
@@ -215,12 +199,12 @@ export function ZoneMap({ gameState, onSelectZone, onClose }: ZoneMapProps) {
           <p className="text-xs text-muted-foreground">Exploradas</p>
         </div>
         <div>
-          <p className="text-lg font-bold">{gameState.zones.filter(z => resolveState(z) === 'exhausted').length}</p>
-          <p className="text-xs text-muted-foreground">Agotadas</p>
+          <p className="text-lg font-bold">{gameState.zones.filter(z => z.cleared).length}</p>
+          <p className="text-xs text-muted-foreground">Completadas</p>
         </div>
         <div>
-          <p className="text-lg font-bold">{gameState.zones.filter(z => resolveState(z) === 'unexplored').length}</p>
-          <p className="text-xs text-muted-foreground">Sin explorar</p>
+          <p className="text-lg font-bold">{gameState.zones.length - gameState.explored_zones.length}</p>
+          <p className="text-xs text-muted-foreground">Por descubrir</p>
         </div>
       </div>
     </Card>

@@ -1,4 +1,4 @@
-import { CombatState, Enemy } from '@/types/game';
+import { CombatState, Enemy, getDiceOutcome } from '@/types/game';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Progress } from '@/components/ui/progress';
@@ -110,15 +110,13 @@ export function CombatPanel({ combatState, onClose }: CombatPanelProps) {
 
       {/* Dice Results Legend */}
       <div className="mb-4 p-2 bg-muted/30 rounded-lg">
-        <p className="text-xs font-medium mb-2 text-muted-foreground">Resultados del D20 del sistema:</p>
+        <p className="text-xs font-medium mb-2 text-muted-foreground">Resultados de D10:</p>
         <div className="flex flex-wrap gap-1">
-          <Badge variant="outline" className="text-xs bg-red-500/10 text-red-400">1 natural: Catástrofe</Badge>
-          <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-400">2-4: Muy malo</Badge>
-          <Badge variant="outline" className="text-xs bg-amber-500/10 text-amber-500">5-8: Malo</Badge>
-          <Badge variant="outline" className="text-xs bg-muted/60 text-muted-foreground">9-12: Neutro</Badge>
-          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-500">13-16: Bueno</Badge>
-          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-500">17-19: Muy bueno</Badge>
-          <Badge variant="outline" className="text-xs bg-primary/10 text-primary">20+: Perfecto</Badge>
+          <Badge variant="outline" className="text-xs bg-red-500/10 text-red-400">1: Muy mala</Badge>
+          <Badge variant="outline" className="text-xs bg-orange-500/10 text-orange-400">2-3: Mala</Badge>
+          <Badge variant="outline" className="text-xs bg-yellow-500/10 text-yellow-400">4-6: Neutra</Badge>
+          <Badge variant="outline" className="text-xs bg-green-500/10 text-green-400">7-9: Buena</Badge>
+          <Badge variant="outline" className="text-xs bg-emerald-500/10 text-emerald-400">10: Excelente</Badge>
         </div>
       </div>
 
@@ -149,7 +147,7 @@ export function CombatPanel({ combatState, onClose }: CombatPanelProps) {
       {/* Combat Tips */}
       <div className="mt-4 p-2 bg-muted/30 rounded-lg">
         <p className="text-xs text-muted-foreground">
-          💡 Recuerda: Una sola acción por turno y cada acción usa el D20 con su modificador. El 1 natural siempre es Catástrofe.
+          💡 Recuerda: Cada acción requiere una tirada de D10. Indica el número obtenido en tu mensaje.
         </p>
       </div>
     </Card>

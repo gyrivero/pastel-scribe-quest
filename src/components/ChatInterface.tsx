@@ -40,12 +40,10 @@ export function ChatInterface({
     
     // Include dice roll if recent - now with attribute modifier
     if (lastDiceRoll) {
-      const canonicalRoll = lastDiceRoll.result;
-      const declaredDice = 'd20';
-      if (lastDiceRoll.attribute && lastDiceRoll.modifier !== undefined) {
-        messageContent += `\n\n[Tirada ${declaredDice} fija: ${canonicalRoll} + ${lastDiceRoll.attribute}: ${lastDiceRoll.modifier} = Total: ${lastDiceRoll.total}. No alteres el número declarado.]`;
+      if (lastDiceRoll.attribute && lastDiceRoll.modifier) {
+        messageContent += `\n\n[Tirada de ${lastDiceRoll.dice}: ${lastDiceRoll.result} + ${lastDiceRoll.attribute}: ${lastDiceRoll.modifier} = Total: ${lastDiceRoll.total}]`;
       } else {
-        messageContent += `\n\n[Tirada ${declaredDice} fija: ${canonicalRoll}. No alteres el número declarado.]`;
+        messageContent += `\n\n[Tirada de ${lastDiceRoll.dice}: ${lastDiceRoll.result}]`;
       }
     }
 
@@ -66,7 +64,6 @@ export function ChatInterface({
           messages: updatedMessages,
           character,
           adventure,
-          diceRoll: lastDiceRoll ? { ...lastDiceRoll, dice: 'd20' } : null,
         }),
       });
 
