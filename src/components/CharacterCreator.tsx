@@ -5,7 +5,7 @@ import { Label } from '@/components/ui/label';
 import { Textarea } from '@/components/ui/textarea';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Card } from '@/components/ui/card';
-import { RACES, CLASSES, ATTRIBUTES } from '@/types/game';
+import { RACES, CLASSES, ATTRIBUTES, CLASS_INFO } from '@/types/game';
 import { Sparkles, Dices, Plus, Minus } from 'lucide-react';
 
 interface CharacterCreatorProps {
@@ -82,26 +82,13 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
   };
 
   const getClassRecommendation = () => {
-    switch (characterClass) {
-      case 'Guerrero':
-      case 'Bárbaro':
-      case 'Paladín':
-        return 'Fuerza alta recomendada';
-      case 'Pícaro':
-      case 'Ranger':
-      case 'Monje':
-        return 'Agilidad alta recomendada';
-      case 'Mago':
-      case 'Hechicero':
-        return 'Inteligencia alta recomendada';
-      case 'Clérigo':
-      case 'Druida':
-      case 'Brujo':
-      case 'Bardo':
-        return 'Voluntad alta recomendada';
-      default:
-        return '';
-    }
+    const classInfo = CLASS_INFO[characterClass as keyof typeof CLASS_INFO];
+    return classInfo?.recommended || '';
+  };
+
+  const getClassDescription = () => {
+    const classInfo = CLASS_INFO[characterClass as keyof typeof CLASS_INFO];
+    return classInfo?.description || '';
   };
 
   return (
@@ -157,10 +144,15 @@ export function CharacterCreator({ onSubmit, onCancel }: CharacterCreatorProps) 
           </div>
         </div>
 
-        {getClassRecommendation() && (
-          <p className="text-xs text-muted-foreground italic">
-            💡 {getClassRecommendation()}
-          </p>
+        {(getClassRecommendation() || getClassDescription()) && (
+          <div className="p-2 rounded-lg bg-muted/50 text-xs">
+            {getClassDescription() && (
+              <p className="text-muted-foreground mb-1">{getClassDescription()}</p>
+            )}
+            {getClassRecommendation() && (
+              <p className="text-primary font-medium">💡 {getClassRecommendation()}</p>
+            )}
+          </div>
         )}
 
         <div>

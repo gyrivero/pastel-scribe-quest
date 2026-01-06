@@ -22,11 +22,11 @@ export function DiceRoller({ onRoll, character }: DiceRollerProps) {
   const [isRolling, setIsRolling] = useState(false);
   const [selectedAttribute, setSelectedAttribute] = useState<string>('none');
 
-  const rollD10 = () => {
+  const rollD20 = () => {
     setIsRolling(true);
     
     setTimeout(() => {
-      const result = Math.floor(Math.random() * 10) + 1;
+      const result = Math.floor(Math.random() * 20) + 1;
       
       let modifier = 0;
       let attrName: string | undefined;
@@ -38,9 +38,9 @@ export function DiceRoller({ onRoll, character }: DiceRollerProps) {
       
       const total = result + modifier;
       
-      setLastRoll({ dice: 'd10', result, attribute: attrName, modifier, total });
+      setLastRoll({ dice: 'd20', result, attribute: attrName, modifier, total });
       setIsRolling(false);
-      onRoll('d10', result, attrName, modifier, total);
+      onRoll('d20', result, attrName, modifier, total);
     }, 600);
   };
 
@@ -50,7 +50,7 @@ export function DiceRoller({ onRoll, character }: DiceRollerProps) {
     <div className="bg-card/80 backdrop-blur-sm rounded-xl p-4 shadow-card fantasy-border">
       <div className="flex items-center gap-2 mb-3">
         <Dices className="w-5 h-5 text-primary" />
-        <h3 className="font-fantasy text-lg font-semibold">Tirada D10</h3>
+        <h3 className="font-fantasy text-lg font-semibold">Tirada D20</h3>
       </div>
       
       {/* Attribute selector */}
@@ -78,13 +78,13 @@ export function DiceRoller({ onRoll, character }: DiceRollerProps) {
 
       {/* Roll button */}
       <Button
-        onClick={rollD10}
+        onClick={rollD20}
         disabled={isRolling}
         className="w-full gap-2 mb-4"
         size="lg"
       >
         <Dices className={cn("w-5 h-5", isRolling && "animate-spin")} />
-        Tirar D10
+        Tirar D20
       </Button>
       
       {/* Result display */}
@@ -123,7 +123,7 @@ export function DiceRoller({ onRoll, character }: DiceRollerProps) {
           
           {/* Outcome guide */}
           <div className="mt-3 text-xs text-muted-foreground text-center">
-            <p>≤1: Muy Mala | 2-3: Mala | 4-6: Neutra | 7-9: Buena | ≥10: Excelente</p>
+            <p>≤5: Muy Mala | 6-9: Mala | 10-14: Neutra | 15-19: Buena | ≥20: Excelente</p>
           </div>
         </div>
       )}

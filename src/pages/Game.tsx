@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
@@ -16,6 +16,7 @@ import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
 import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
 import { 
   LogOut, 
@@ -27,7 +28,8 @@ import {
   Scroll,
   Package,
   Map,
-  Swords
+  Swords,
+  Trash2
 } from 'lucide-react';
 
 type View = 'home' | 'create-character' | 'create-adventure' | 'playing';
@@ -259,22 +261,104 @@ export default function Game() {
     setView('playing');
   };
 
+  const deleteCharacter = async (characterId: string) => {
+    try {
+      // First, update any adventures that use this character
+      await supabase.from('adventures').update({ character_id: null }).eq('character_id', characterId);
+      
+      const { error } = await supabase.from('characters').delete().eq('id', characterId);
+      if (error) throw error;
+      
+      setCharacters(characters.filter(c => c.id !== characterId));
+      toast.success('Personaje eliminado');
+    } catch (error) {
+      console.error('Error deleting character:', error);
+      toast.error('Error al eliminar el personaje');
+    }
+  };
+
+  const deleteAdventure = async (adventureId: string) => {
+    try {
+      // First delete story logs
+      await supabase.from('story_logs').delete().eq('adventure_id', adventureId);
+      
+      const { error } = await supabase.from('adventures').delete().eq('id', adventureId);
+      if (error) throw error;
+      
+      setAdventures(adventures.filter(a => a.id !== adventureId));
+      toast.success('Aventura eliminada');
+    } catch (error) {
+      console.error('Error deleting adventure:', error);
+      toast.error('Error al eliminar la aventura');
+    }
+  };
+
+  // Persist character changes (inventory, stats) to database
+  const persistCharacter = useCallback(async (character: Character) => {
+    try {
+      const inventoryJson = JSON.parse(JSON.stringify(character.inventory || []));
+      
+      await supabase.from('characters').update({
+        health: character.health,
+        max_health: character.max_health,
+        gold: character.gold,
+        experience: character.experience,
+        inventory: inventoryJson,
+        strength: character.strength,
+        dexterity: character.agility * 3 + 1,
+        intelligence: character.intelligence,
+        wisdom: character.willpower * 3 + 1,
+      }).eq('id', character.id);
+    } catch (error) {
+      console.error('Error persisting character:', error);
+    }
+  }, []);
+
+  // Update character and persist
+  const updateCharacter = useCallback((updatedCharacter: Character) => {
+    setCurrentCharacter(updatedCharacter);
+    setCharacters(prev => prev.map(c => c.id === updatedCharacter.id ? updatedCharacter : c));
+    persistCharacter(updatedCharacter);
+  }, [persistCharacter]);
+
   const handleAction = (actionId: string) => {
-    // This will be used to pre-fill actions in the chat
-    toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D10.`);
+    toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D20.`);
   };
 
   const handleUseItem = (item: GameItem) => {
-    toast.info(`Usando ${item.name}. Describe la acción en el chat.`);
+    if (!currentCharacter) return;
+    
+    // If item has limited uses, decrease
+    if (item.uses === 'limited' && item.uses_remaining !== undefined) {
+      const newUsesRemaining = item.uses_remaining - 1;
+      let updatedInventory: GameItem[];
+      
+      if (newUsesRemaining <= 0) {
+        // Remove item
+        updatedInventory = currentCharacter.inventory.filter(i => i.id !== item.id);
+        toast.info(`${item.name} agotado y eliminado del inventario.`);
+      } else {
+        // Update uses
+        updatedInventory = currentCharacter.inventory.map(i => 
+          i.id === item.id ? { ...i, uses_remaining: newUsesRemaining } : i
+        );
+        toast.info(`Usando ${item.name}. Usos restantes: ${newUsesRemaining}`);
+      }
+      
+      updateCharacter({ ...currentCharacter, inventory: updatedInventory });
+    } else {
+      toast.info(`Usando ${item.name}. Describe la acción en el chat.`);
+    }
   };
 
   const handleEquipItem = (item: GameItem) => {
     if (!currentCharacter) return;
-    // Toggle equip state
+    
     const updatedInventory = currentCharacter.inventory.map(i => 
       i.id === item.id ? { ...i, equipped: !i.equipped } : i
     );
-    setCurrentCharacter({ ...currentCharacter, inventory: updatedInventory });
+    
+    updateCharacter({ ...currentCharacter, inventory: updatedInventory });
     toast.success(item.equipped ? `${item.name} desequipado` : `${item.name} equipado`);
   };
 
@@ -528,11 +612,38 @@ export default function Game() {
           ) : (
             <div className="space-y-3">
               {characters.map((character) => (
-                <CharacterSheet 
-                  key={character.id} 
-                  character={character} 
-                  compact 
-                />
+                <div key={character.id} className="relative">
+                  <CharacterSheet 
+                    character={character} 
+                    compact 
+                  />
+                  <AlertDialog>
+                    <AlertDialogTrigger asChild>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        className="absolute top-2 right-2 h-8 w-8 text-muted-foreground hover:text-destructive"
+                        onClick={(e) => e.stopPropagation()}
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    </AlertDialogTrigger>
+                    <AlertDialogContent>
+                      <AlertDialogHeader>
+                        <AlertDialogTitle>¿Eliminar personaje?</AlertDialogTitle>
+                        <AlertDialogDescription>
+                          ¿Estás seguro de que quieres eliminar a {character.name}? Esta acción no se puede deshacer.
+                        </AlertDialogDescription>
+                      </AlertDialogHeader>
+                      <AlertDialogFooter>
+                        <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                        <AlertDialogAction onClick={() => deleteCharacter(character.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                          Eliminar
+                        </AlertDialogAction>
+                      </AlertDialogFooter>
+                    </AlertDialogContent>
+                  </AlertDialog>
+                </div>
               ))}
             </div>
           )}
@@ -559,7 +670,7 @@ export default function Game() {
                   onClick={() => continueAdventure(adventure)}
                 >
                   <div className="flex items-start justify-between">
-                    <div>
+                    <div className="flex-1">
                       <h3 className="font-fantasy text-lg font-semibold">
                         {adventure.title}
                       </h3>
@@ -572,9 +683,37 @@ export default function Game() {
                         </p>
                       )}
                     </div>
-                    <Button variant="ghost" size="sm" className="shrink-0">
-                      Continuar
-                    </Button>
+                    <div className="flex items-center gap-1 shrink-0">
+                      <Button variant="ghost" size="sm">
+                        Continuar
+                      </Button>
+                      <AlertDialog>
+                        <AlertDialogTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            className="h-8 w-8 text-muted-foreground hover:text-destructive"
+                            onClick={(e) => e.stopPropagation()}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </AlertDialogTrigger>
+                        <AlertDialogContent onClick={(e) => e.stopPropagation()}>
+                          <AlertDialogHeader>
+                            <AlertDialogTitle>¿Eliminar aventura?</AlertDialogTitle>
+                            <AlertDialogDescription>
+                              ¿Estás seguro de que quieres eliminar "{adventure.title}"? Se perderá todo el progreso y los registros de la historia.
+                            </AlertDialogDescription>
+                          </AlertDialogHeader>
+                          <AlertDialogFooter>
+                            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+                            <AlertDialogAction onClick={() => deleteAdventure(adventure.id)} className="bg-destructive text-destructive-foreground hover:bg-destructive/90">
+                              Eliminar
+                            </AlertDialogAction>
+                          </AlertDialogFooter>
+                        </AlertDialogContent>
+                      </AlertDialog>
+                    </div>
                   </div>
                 </Card>
               ))}
