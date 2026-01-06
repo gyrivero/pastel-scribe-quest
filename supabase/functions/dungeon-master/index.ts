@@ -55,10 +55,97 @@ El atributo se elige según la acción:
 
 👉 SIEMPRE usa el TOTAL (D20 + atributo), no el dado crudo.
 
+## 🗺️ MAPA DE ZONAS (OBLIGATORIO)
+
+Cada escenario DEBE tener un mapa abstracto de zonas. Al inicio de cada aventura:
+
+1. **Genera el mapa** con 5-8 zonas conectadas
+2. **Define cada zona** con:
+   - Nombre descriptivo
+   - Tipo (entrada, habitación, trampa, tesoro, jefe, salida)
+   - Conexiones con otras zonas
+   - Estado inicial (sin explorar)
+
+### Estados de zona:
+- **Sin explorar**: El jugador no ha entrado
+- **Explorada**: El jugador entró y examinó
+- **Completada**: Se resolvió el evento de la zona
+- **Bloqueada**: Requiere algo específico para acceder
+
+📌 Este es un MAPA DE OPORTUNIDADES NARRATIVAS, no un mapa táctico.
+
+### Al describir el mapa:
+\`\`\`
+🗺️ ZONAS DEL ESCENARIO:
+1. [Nombre] - [Estado] - [Conexiones]
+2. [Nombre] - [Estado] - [Conexiones]
+...
+\`\`\`
+
+## 🔍 SISTEMA DE BÚSQUEDA DE OBJETOS
+
+### Intención explícita
+El jugador puede declarar qué busca:
+- Un arma
+- Un consumible
+- Un objeto útil
+- Algo narrativo específico
+
+### Regla clave
+⚠️ **BUSCAR NO GARANTIZA ENCONTRAR LO BUSCADO**
+
+El resultado depende de:
+1. Categoría del dado
+2. Coherencia con la historia
+3. Disposición real de la zona
+
+### Ejemplo:
+Jugador busca un arma → puede encontrar:
+- Un arma (si hay y el dado lo permite)
+- Un consumible diferente
+- Un arma rota/defectuosa
+- Un objeto narrativo
+- Nada
+
+### Generación de objetos por zona (PERSISTENCIA CRÍTICA)
+
+Al entrar POR PRIMERA VEZ a una zona:
+1. **Genera en secreto** la lista completa de objetos disponibles
+2. **NO muestres** esta lista al jugador
+3. **Guarda** esta lista de forma persistente
+4. Los objetos solo se revelan cuando el jugador los encuentra
+
+📌 La lista de objetos de una zona NUNCA cambia después de generarse.
+
+## 👥 PERSONAJES JUGABLES (MULTIJUGADOR NARRATIVO)
+
+Puede haber uno o más personajes jugables en una misma aventura.
+
+### Cada personaje tiene:
+- Su propia character sheet
+- Su propio inventario
+- Su propio nivel
+- Su propia tensión
+- Su propio turno
+
+### Turnos
+- Los personajes actúan de a uno por ronda
+- Cada uno realiza una única acción en su turno
+- Cuando todos actuaron, se resuelve el evento de fin de ronda
+
+### Al inicio de cada ronda (multijugador):
+\`\`\`
+👥 ORDEN DE TURNOS:
+1. [Nombre del personaje] - Turno actual
+2. [Nombre del personaje] - Esperando
+...
+\`\`\`
+
 ## 📋 ACCIONES DEL JUGADOR
 
 En su turno, el jugador realiza UNA acción:
-- Explorar
+- Explorar la habitación
+- Buscar objeto específico (arma/consumible/útil/narrativo)
 - Usar habilidad
 - Usar consumible
 - Atacar
@@ -66,7 +153,43 @@ En su turno, el jugador realiza UNA acción:
 - Activar rasgo activo
 - Pasar
 
-⚠️ **REGLA CRÍTICA**: Toda acción requiere tirada de D20. Si el jugador NO indica el número, la acción NO es válida. Solicita la tirada.
+⚠️ **REGLA CRÍTICA**: 
+- Una acción = una intención
+- Un turno = una tirada
+- Sin número de dado → acción NO válida
+
+## 🎬 INICIO DE AVENTURA (OBLIGATORIO)
+
+Cada aventura DEBE comenzar con:
+
+1. **Introducción corta** que indique:
+   - Dónde está el/los personaje/s
+   - Cómo llegaron allí
+   - Qué se percibe inicialmente
+
+2. **Mapa inicial** con zonas generadas
+
+3. **Estado inicial** de todos los personajes
+
+📌 La introducción NO resuelve nada, solo establece contexto.
+
+### Ejemplo de inicio:
+\`\`\`
+📖 INTRODUCCIÓN
+
+[Descripción atmosférica de 2-3 párrafos]
+
+🗺️ ZONAS DEL ESCENARIO:
+1. Entrada Principal - Sin explorar - Conecta con: Vestíbulo
+2. Vestíbulo Oscuro - Sin explorar - Conecta con: Entrada, Sala Este, Sala Oeste
+3. Sala Este - Sin explorar - Conecta con: Vestíbulo
+4. Sala Oeste - Bloqueada (requiere llave) - Conecta con: Vestíbulo
+5. Cámara del Guardián - Sin explorar - Conecta con: Sala Este
+6. Salida Secreta - Sin explorar - Conecta con: Cámara del Guardián
+
+📍 Ubicación actual: Entrada Principal
+🎯 Opciones iniciales: Explorar la entrada, Examinar los alrededores, Avanzar al vestíbulo
+\`\`\`
 
 ## ⚔️ COMBATE
 
@@ -151,48 +274,27 @@ Tu respuesta SIEMPRE debe incluir:
 
 1. **📍 ESTADO ACTUAL**
    - Ronda: X/15 (o zona X/5)
-   - 😰 Tensión: X/10
+   - 😰 Tensión: X/10 (por cada personaje)
    - ☣️ Corrupción: X/10
    
-2. **🎲 RESOLUCIÓN DE TIRADA** (si hay tirada)
+2. **🗺️ MAPA DE ZONAS** (resumen)
+   - Zonas: X exploradas / Y total
+   - Zona actual: [nombre]
+   
+3. **🎲 RESOLUCIÓN DE TIRADA** (si hay tirada)
    - D20: X + Atributo: Y = Total: Z
    - Resultado: [Muy mala/Mala/Neutra/Buena/Excelente]
 
-3. **📖 NARRACIÓN INMERSIVA**
+4. **📖 NARRACIÓN INMERSIVA**
 
-4. **📋 CAMBIOS DE ESTADO** (tras cada turno):
+5. **📋 CAMBIOS DE ESTADO** (tras cada turno):
    - ❤️ Vida actual/máxima
    - 😰 Nueva Tensión (si cambió)
    - ☣️ Nueva Corrupción (si cambió)
    - 🎒 Cambios de inventario
    - ✨ Estados activos
 
-5. **🎯 2-3 OPCIONES** para la siguiente acción
-
-## ❗ REGISTRO OBLIGATORIO (CRÍTICO)
-
-Debes mantener registro de:
-
-**Personaje:**
-- Nivel, Atributos, Vida, Daño base, Armadura
-- Tensión, Rasgos activo/pasivo
-- Habilidades adquiridas, Inventario, Consumibles
-- Estados activos
-
-**Mundo:**
-- Corrupción, Rondas restantes
-- Zonas resueltas, Decisiones narrativas clave
-
-📌 NADA puede borrarse sin justificación narrativa.
-
-## 🧠 PRINCIPIOS DE INTERPRETACIÓN
-
-1. El dado + atributo manda
-2. Todo fallo deja marca
-3. La tensión presiona al jugador
-4. La corrupción transforma el mundo
-5. Todo queda registrado
-6. No hay retrocesos "gratis"
+6. **🎯 2-3 OPCIONES** para la siguiente acción
 
 ## 🎒 GESTIÓN DE INVENTARIO (CRÍTICO)
 
@@ -209,6 +311,18 @@ Cuando el jugador USA un objeto:
 
 📌 EL INVENTARIO SIEMPRE DEBE ESTAR SINCRONIZADO CON LA NARRATIVA.
 
+## ⚠️ PRINCIPIOS FUNDAMENTALES
+
+1. Una acción = una intención
+2. Un turno = una tirada
+3. Un personaje = una hoja independiente
+4. Los recursos son FINITOS
+5. TODO se registra y persiste
+6. El DM-IA debe poner límites activamente
+7. El dado + atributo manda
+8. Todo fallo deja marca
+9. No hay retrocesos "gratis"
+
 Responde SIEMPRE en español.`;
 
 serve(async (req) => {
@@ -217,7 +331,7 @@ serve(async (req) => {
   }
 
   try {
-    const { messages, character, adventure } = await req.json();
+    const { messages, character, characters, adventure } = await req.json();
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     
     if (!LOVABLE_API_KEY) {
@@ -226,46 +340,73 @@ serve(async (req) => {
 
     let contextMessage = SYSTEM_PROMPT;
     
-    if (character) {
-      const tensionLevel = character.tension >= 10 ? "Agotado (-1 daño, -1 armadura, NO puede curarse)" : 
-                          character.tension >= 7 ? "Ansioso (-1 daño, -1 armadura)" :
-                          character.tension >= 5 ? "Estresado (-1 daño)" : "Tranquilo";
+    // Función para generar contexto de un personaje
+    const generateCharacterContext = (char: any, charTension?: number) => {
+      const tension = charTension ?? char.tension ?? 0;
+      const tensionLevel = tension >= 10 ? "Agotado (-1 daño, -1 armadura, NO puede curarse)" : 
+                          tension >= 7 ? "Ansioso (-1 daño, -1 armadura)" :
+                          tension >= 5 ? "Estresado (-1 daño)" : "Tranquilo";
       
-      // Calcular modificadores de tensión
-      const tensionDamageMod = character.tension >= 5 ? -1 : 0;
-      const tensionArmorMod = character.tension >= 7 ? -1 : 0;
-      const effectiveDamage = Math.max(0, (character.base_damage || 1) + tensionDamageMod);
-      const effectiveArmor = Math.max(0, (character.armor || 0) + tensionArmorMod);
+      const tensionDamageMod = tension >= 5 ? -1 : 0;
+      const tensionArmorMod = tension >= 7 ? -1 : 0;
+      const effectiveDamage = Math.max(0, (char.base_damage || 1) + tensionDamageMod);
+      const effectiveArmor = Math.max(0, (char.armor || 0) + tensionArmorMod);
       
-      contextMessage += `
+      return `
+Nombre: ${char.name}
+Raza: ${char.race}
+Clase: ${char.class}
+Nivel: ${char.level}
 
---- 🧙 PERSONAJE ACTUAL ---
-Nombre: ${character.name}
-Raza: ${character.race}
-Clase: ${character.class}
-Nivel: ${character.level}
+📊 ATRIBUTOS (1-5, modifican D20):
+- Agilidad: ${char.agility || 2}
+- Fuerza: ${char.strength || 3}
+- Inteligencia: ${char.intelligence || 2}
+- Voluntad: ${char.willpower || 3}
 
-📊 ATRIBUTOS (1-5, modifican D10):
-- Agilidad: ${character.agility || 2}
-- Fuerza: ${character.strength || 3}
-- Inteligencia: ${character.intelligence || 2}
-- Voluntad: ${character.willpower || 3}
+❤️ Vida: ${char.health}/${char.max_health}
+⚔️ Daño base: ${char.base_damage || 1} ${tensionDamageMod < 0 ? `(${tensionDamageMod} por tensión = ${effectiveDamage})` : ''}
+🛡️ Armadura: ${char.armor || 0} ${tensionArmorMod < 0 ? `(${tensionArmorMod} por tensión = ${effectiveArmor})` : ''}
 
-❤️ Vida: ${character.health}/${character.max_health}
-⚔️ Daño base: ${character.base_damage || 1} ${tensionDamageMod < 0 ? `(${tensionDamageMod} por tensión = ${effectiveDamage})` : ''}
-🛡️ Armadura: ${character.armor || 0} ${tensionArmorMod < 0 ? `(${tensionArmorMod} por tensión = ${effectiveArmor})` : ''}
+😰 Tensión: ${tension}/10 - ${tensionLevel}
+${tension >= 10 ? '⚠️ NO PUEDE CURARSE CON CONSUMIBLES' : ''}
 
-😰 Tensión: ${character.tension || 0}/10 - ${tensionLevel}
-${character.tension >= 10 ? '⚠️ NO PUEDE CURARSE CON CONSUMIBLES' : ''}
+${char.active_trait ? `✨ Rasgo activo: ${char.active_trait}` : ''}
+${char.passive_trait ? `🔮 Rasgo pasivo: ${char.passive_trait}` : ''}
 
-${character.active_trait ? `✨ Rasgo activo: ${character.active_trait}` : ''}
-${character.passive_trait ? `🔮 Rasgo pasivo: ${character.passive_trait}` : ''}
+🎒 Inventario: ${JSON.stringify(char.inventory || [])}
+💰 Oro: ${char.gold}
+📜 Trasfondo: ${char.background || 'Desconocido'}
 
-🎒 Inventario: ${JSON.stringify(character.inventory || [])}
-💰 Oro: ${character.gold}
-📜 Trasfondo: ${character.background || 'Desconocido'}
-
-${character.skills && character.skills.length > 0 ? `🎯 Habilidades: ${character.skills.map((s: {name: string}) => s.name).join(', ')}` : ''}`;
+${char.skills && char.skills.length > 0 ? `🎯 Habilidades: ${char.skills.map((s: {name: string}) => s.name).join(', ')}` : ''}`;
+    };
+    
+    // Soporte multijugador
+    if (characters && Array.isArray(characters) && characters.length > 0) {
+      contextMessage += `\n\n--- 👥 PERSONAJES JUGABLES (${characters.length}) ---`;
+      
+      const gameState = adventure?.game_state || {};
+      const characterTensions = gameState.character_tensions || {};
+      
+      characters.forEach((char: any, index: number) => {
+        const charTension = characterTensions[char.id] ?? char.tension ?? 0;
+        contextMessage += `\n\n🧙 PERSONAJE ${index + 1}:`;
+        contextMessage += generateCharacterContext(char, charTension);
+      });
+      
+      // Indicar turno actual
+      if (gameState.current_turn_character_id) {
+        const currentChar = characters.find((c: any) => c.id === gameState.current_turn_character_id);
+        if (currentChar) {
+          contextMessage += `\n\n👉 TURNO ACTUAL: ${currentChar.name}`;
+        }
+      }
+    } else if (character) {
+      const gameState = adventure?.game_state || {};
+      const charTension = gameState.tension ?? character.tension ?? 0;
+      
+      contextMessage += `\n\n--- 🧙 PERSONAJE ACTUAL ---`;
+      contextMessage += generateCharacterContext(character, charTension);
     }
 
     if (adventure) {
@@ -292,7 +433,28 @@ Escena actual: ${adventure.current_scene || 'Inicio de la aventura'}
 - ☣️ Corrupción: ${corruption}/10 - ${corruptionLevel}
 - ${gameState.is_combat ? '⚔️ EN COMBATE' : '🕊️ Exploración'}
 
-🗺️ Zonas exploradas: ${(gameState.explored_zones || []).join(', ') || 'Ninguna'}
+🗺️ MAPA DE ZONAS:`;
+
+      // Incluir información de zonas
+      const zones = gameState.zones || [];
+      if (zones.length > 0) {
+        zones.forEach((zone: any, index: number) => {
+          const status = zone.status || (zone.cleared ? 'cleared' : zone.explored ? 'explored' : 'unexplored');
+          const statusLabel = status === 'cleared' ? 'Completada' : 
+                             status === 'explored' ? 'Explorada' : 
+                             status === 'blocked' ? 'Bloqueada' : 'Sin explorar';
+          const isCurrent = gameState.current_zone?.id === zone.id;
+          contextMessage += `
+${index + 1}. ${zone.name} - ${statusLabel}${isCurrent ? ' (ACTUAL)' : ''} - Conecta con: ${zone.connected_zones?.length || 0} zonas`;
+        });
+      } else {
+        contextMessage += `
+⚠️ No hay zonas generadas aún. DEBES generar el mapa de zonas en tu primera respuesta.`;
+      }
+
+      contextMessage += `
+
+📋 Zonas exploradas: ${(gameState.explored_zones || []).length}/${zones.length}
 📋 Eventos resueltos: ${(gameState.events_resolved || []).length}
 📝 Decisiones clave: ${(gameState.key_decisions || []).join(', ') || 'Ninguna aún'}
 
@@ -319,6 +481,8 @@ ${corruption >= 5 ? `⚠️ Corrupción activa: Enemigos tienen +${extraHealth} 
 
     console.log("Calling Lovable AI with context:", { 
       hasCharacter: !!character, 
+      hasCharacters: !!(characters && characters.length > 0),
+      characterCount: characters?.length || (character ? 1 : 0),
       hasAdventure: !!adventure,
       messageCount: messages?.length || 0 
     });
