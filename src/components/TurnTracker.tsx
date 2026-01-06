@@ -147,7 +147,7 @@ export function TurnTracker({ gameState, onAction, disabled }: TurnTrackerProps)
       {gameState.turn_phase === 'player_action' && (
         <div className="space-y-2">
           <p className="text-xs font-medium text-muted-foreground">Acciones Disponibles:</p>
-          <div className="grid grid-cols-2 gap-2">
+          <div className="grid grid-cols-2 gap-2 max-h-[200px] overflow-y-auto">
             {actions.map((action) => (
               <Button
                 key={action.id}

@@ -107,6 +107,8 @@ export interface Adventure {
   id: string;
   user_id: string;
   character_id?: string;
+  // Soporte multijugador
+  character_ids?: string[];
   title: string;
   description?: string;
   setting: string;
@@ -127,15 +129,22 @@ export interface GameState {
   current_zone?: Zone;
   
   // Contadores críticos
-  tension: number;      // 0-10, por jugador
+  tension: number;      // 0-10, por jugador principal
   corruption: number;   // 0-10, global
+  
+  // Tensión por personaje (multijugador)
+  character_tensions?: Record<string, number>;
+  
+  // Turno actual (multijugador)
+  current_turn_character_id?: string;
+  turn_order?: string[];
   
   // Estado del turno
   turn_phase: TurnPhase;
   is_combat: boolean;
   combat_state?: CombatState;
   
-  // Zonas
+  // Zonas del escenario
   zones: Zone[];
   explored_zones: string[];
   events_resolved: string[];
@@ -154,15 +163,29 @@ export interface ActiveState {
   duration?: number; // rondas restantes, undefined = permanente
 }
 
+// Estado de zona: sin explorar, explorada, bloqueada, completada
+export type ZoneStatus = 'unexplored' | 'explored' | 'blocked' | 'cleared';
+
+// Objetos ocultos de zona (generados al entrar por primera vez)
+export interface ZoneHiddenItems {
+  zone_id: string;
+  items: GameItem[];
+  discovered_items: string[]; // IDs de objetos ya encontrados
+}
+
 export interface Zone {
   id: string;
   name: string;
   description: string;
   explored: boolean;
   cleared: boolean;
+  status: ZoneStatus; // Nuevo: estado de la zona
+  blocked_reason?: string; // Si está bloqueada, por qué
   connected_zones: string[];
   position: { x: number; y: number };
   type: 'entrance' | 'room' | 'boss' | 'treasure' | 'trap' | 'exit';
+  // Objetos ocultos (no visibles para el jugador)
+  hidden_items?: ZoneHiddenItems;
 }
 
 export interface CombatState {
@@ -272,6 +295,10 @@ export const ATTRIBUTES = [
 // Acciones del jugador (fuera de combate)
 export const PLAYER_ACTIONS = [
   { id: 'explore', name: 'Explorar', description: 'Examinar la habitación o zona actual', attribute: 'intelligence' },
+  { id: 'search_weapon', name: 'Buscar Arma', description: 'Buscar un arma en la zona', attribute: 'intelligence' },
+  { id: 'search_consumable', name: 'Buscar Consumible', description: 'Buscar consumibles en la zona', attribute: 'intelligence' },
+  { id: 'search_object', name: 'Buscar Objeto', description: 'Buscar un objeto útil en la zona', attribute: 'intelligence' },
+  { id: 'search_narrative', name: 'Buscar Pistas', description: 'Buscar algo narrativo específico', attribute: 'intelligence' },
   { id: 'use_consumable', name: 'Usar Consumible', description: 'Usar una poción u objeto consumible', attribute: null },
   { id: 'use_ability', name: 'Usar Habilidad', description: 'Activar una habilidad especial', attribute: null },
   { id: 'attack', name: 'Atacar', description: 'Atacar a un enemigo o objetivo', attribute: 'strength' },
@@ -382,6 +409,9 @@ export function createDefaultGameState(): GameState {
     in_zone: false,
     tension: 0,
     corruption: 0,
+    character_tensions: {},
+    current_turn_character_id: undefined,
+    turn_order: [],
     turn_phase: 'player_action',
     is_combat: false,
     zones: [],
@@ -390,6 +420,35 @@ export function createDefaultGameState(): GameState {
     key_decisions: [],
     active_states: [],
   };
+}
+
+// Obtener el estado de una zona
+export function getZoneStatus(zone: Zone): ZoneStatus {
+  if (zone.status) return zone.status;
+  // Backward compatibility
+  if (zone.cleared) return 'cleared';
+  if (zone.explored) return 'explored';
+  return 'unexplored';
+}
+
+// Colores por estado de zona
+export function getZoneStatusColor(status: ZoneStatus): string {
+  switch (status) {
+    case 'cleared': return 'bg-green-500/20 border-green-500/50 text-green-400';
+    case 'explored': return 'bg-yellow-500/20 border-yellow-500/50 text-yellow-400';
+    case 'blocked': return 'bg-red-500/20 border-red-500/50 text-red-400';
+    default: return 'bg-muted/50 border-muted-foreground/30 text-muted-foreground';
+  }
+}
+
+// Nombres de estado de zona
+export function getZoneStatusName(status: ZoneStatus): string {
+  switch (status) {
+    case 'cleared': return 'Completada';
+    case 'explored': return 'Explorada';
+    case 'blocked': return 'Bloqueada';
+    default: return 'Sin explorar';
+  }
 }
 
 // Convierte atributos D&D (3-18) a nuevo sistema (1-5)
