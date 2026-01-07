@@ -359,6 +359,80 @@ const updateGameState = useCallback(
     persistCharacter(updatedCharacter);
   }, [persistCharacter]);
 
+  const applyStatePatch = useCallback(
+  (patch: StatePatch) => {
+    // 1) Aplicar cambios de personaje
+    if (patch.character_patch && currentCharacter) {
+      const cp = patch.character_patch;
+
+      let nextCharacter = { ...currentCharacter };
+
+      // HP
+      if (cp.hp) {
+        // OJO: tu Character real puede usar nombres distintos.
+        // En algunos proyectos es hp_current/hp_max o health_current/health_max.
+        // Ajustalo a los campos reales de tu tipo Character.
+        nextCharacter = {
+          ...nextCharacter,
+          hp_current: cp.hp.current ?? nextCharacter.hp_current,
+          hp_max: cp.hp.max ?? nextCharacter.hp_max,
+        };
+      }
+
+      // Inventario
+      if (cp.inventory) {
+        const currentInv = nextCharacter.inventory ?? [];
+        let nextInv = [...currentInv];
+
+        // remove
+        const removeIds = cp.inventory.remove ?? [];
+        if (removeIds.length > 0) {
+          nextInv = nextInv.filter((item) => !removeIds.includes(item.id));
+        }
+
+        // add (evitando duplicados por id)
+        const addItems = cp.inventory.add ?? [];
+        for (const item of addItems) {
+          const exists = nextInv.some((i) => i.id === item.id);
+          if (!exists) nextInv.push(item as any); // "as any" por compatibilidad si tu GameItem es más estricto
+        }
+
+        nextCharacter = { ...nextCharacter, inventory: nextInv };
+      }
+
+      // Esto actualiza UI + persiste en Supabase
+      updateCharacter(nextCharacter);
+    }
+
+    // 2) Aplicar cambios de aventura / mundo
+    if (patch.adventure_patch) {
+      const ap = patch.adventure_patch;
+
+      let next = { ...gameState };
+
+      // zona actual: buscamos por id dentro de next.zones
+      if (ap.current_zone_id) {
+        const found = next.zones.find((z) => z.id === ap.current_zone_id);
+        if (found) {
+          next.current_zone = found;
+        }
+      }
+
+      // zonas exploradas: agregamos sin duplicar
+      if (ap.explored_zones_add && ap.explored_zones_add.length > 0) {
+        const previous = next.explored_zones ?? [];
+        const merged = new Set([...previous, ...ap.explored_zones_add]);
+        next.explored_zones = Array.from(merged);
+      }
+
+      // Esto actualiza UI (mapa/turnos) + persiste en Supabase
+      updateGameState(next);
+    }
+  },
+  [currentCharacter, gameState, updateCharacter, updateGameState]
+);
+
+
   const handleAction = (actionId: string) => {
     toast.info(`Acción: ${actionId}. Escribe tu acción con el resultado del D20.`);
   };
@@ -427,6 +501,22 @@ const updateGameState = useCallback(
       });
     }
   };
+
+  const handleStatePatch = useCallback(
+  (rawPatch: unknown, _rawAssistantText?: string) => {
+    const parsed = ZStatePatch.safeParse(rawPatch);
+
+    if (!parsed.success) {
+      console.warn("STATE_PATCH inválido:", parsed.error);
+      // Si usás toasts en Game.tsx, podrías mostrar uno acá.
+      return;
+    }
+
+    applyStatePatch(parsed.data);
+  },
+  [applyStatePatch]
+);
+
 
   const handleDiceRoll = (dice: string, result: number, attribute?: string, modifier?: number, total?: number) => {
     setLastDiceRoll({ 
@@ -586,6 +676,7 @@ const updateGameState = useCallback(
             messages={messages}
             onMessagesUpdate={handleMessagesUpdate}
             lastDiceRoll={lastDiceRoll}
+            onStatePatch={handleStatePatch}
           />
         </main>
       </div>
