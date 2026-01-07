@@ -120,6 +120,8 @@ export interface Adventure {
 }
 
 export interface GameState {
+  [key: string]: unknown; // Index signature for Json compatibility
+  
   // Rondas
   scenario_round: number;
   max_scenario_rounds: number;
