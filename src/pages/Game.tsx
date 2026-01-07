@@ -14,7 +14,7 @@ import { ZoneMap } from '@/components/ZoneMap';
 import { CombatPanel } from '@/components/CombatPanel';
 import { Button } from '@/components/ui/button';
 import { Card } from '@/components/ui/card';
-import { Sheet, SheetContent, SheetTrigger } from '@/components/ui/sheet';
+import { Sheet, SheetContent, SheetDescription, SheetHeader, SheetTitle, SheetTrigger } from '@/components/ui/sheet';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from '@/components/ui/alert-dialog';
 import { toast } from 'sonner';
@@ -363,78 +363,105 @@ const updateGameState = useCallback(
   }, [persistCharacter]);
 
   const applyStatePatch = useCallback(
-  (patch: StatePatch) => {
-    // 1) Aplicar cambios de personaje
-    if (patch.character_patch && currentCharacter) {
-      const cp = patch.character_patch;
+    (patch: StatePatch) => {
+      // 1) Cambios de personaje
+      if (patch.character_patch && currentCharacter) {
+        const cp = patch.character_patch;
+        let nextCharacter: Character = { ...currentCharacter };
 
-      let nextCharacter = { ...currentCharacter };
-
-      // HP
-      if (cp.hp) {
-        // OJO: tu Character real puede usar nombres distintos.
-        // En algunos proyectos es hp_current/hp_max o health_current/health_max.
-        // Ajustalo a los campos reales de tu tipo Character.
-        nextCharacter = {
-          ...nextCharacter,
-          health: cp.hp.current ?? nextCharacter.health,
-          max_health: cp.hp.max ?? nextCharacter.max_health,
-        };
-
-      }
-
-      // Inventario
-      if (cp.inventory) {
-        const currentInv = nextCharacter.inventory ?? [];
-        let nextInv = [...currentInv];
-
-        // remove
-        const removeIds = cp.inventory.remove ?? [];
-        if (removeIds.length > 0) {
-          nextInv = nextInv.filter((item) => !removeIds.includes(item.id));
+        // HP
+        if (cp.hp) {
+          nextCharacter = {
+            ...nextCharacter,
+            health: cp.hp.current ?? nextCharacter.health,
+            max_health: cp.hp.max ?? nextCharacter.max_health,
+          };
         }
 
-        // add (evitando duplicados por id)
-        const addItems = cp.inventory.add ?? [];
-        for (const item of addItems) {
-          const exists = nextInv.some((i) => i.id === item.id);
-          if (!exists) nextInv.push(item as any); // "as any" por compatibilidad si tu GameItem es más estricto
+        // Stats
+        if (typeof cp.gold === 'number') nextCharacter.gold = cp.gold;
+        if (typeof cp.experience === 'number') nextCharacter.experience = cp.experience;
+        if (typeof cp.level === 'number') nextCharacter.level = cp.level;
+
+        // Atributos (y derivados)
+        if (cp.attributes) {
+          const agility = cp.attributes.agility ?? nextCharacter.agility;
+          const strength = cp.attributes.strength ?? nextCharacter.strength;
+          const intelligence = cp.attributes.intelligence ?? nextCharacter.intelligence;
+          const willpower = cp.attributes.willpower ?? nextCharacter.willpower;
+
+          const maxHealth = 10 + strength;
+          const baseDamage = 1 + Math.floor(strength / 2);
+
+          nextCharacter = {
+            ...nextCharacter,
+            agility,
+            strength,
+            intelligence,
+            willpower,
+            max_health: maxHealth,
+            base_damage: baseDamage,
+            health: Math.min(nextCharacter.health, maxHealth),
+          };
         }
 
-        nextCharacter = { ...nextCharacter, inventory: nextInv };
-      }
+        // Inventario
+        if (cp.inventory) {
+          // Preferido: snapshot completo
+          if (cp.inventory.set) {
+            nextCharacter = {
+              ...nextCharacter,
+              inventory: cp.inventory.set as unknown as GameItem[],
+            };
+          } else {
+            const currentInv = nextCharacter.inventory ?? [];
+            let nextInv = [...currentInv];
 
-      // Esto actualiza UI + persiste en Supabase
-      updateCharacter(nextCharacter);
-    }
+            const removeIds = cp.inventory.remove ?? [];
+            if (removeIds.length > 0) {
+              nextInv = nextInv.filter((item) => !removeIds.includes(item.id));
+            }
 
-    // 2) Aplicar cambios de aventura / mundo
-    if (patch.adventure_patch) {
-      const ap = patch.adventure_patch;
+            const addItems = cp.inventory.add ?? [];
+            for (const item of addItems) {
+              const exists = nextInv.some((i) => i.id === item.id);
+              if (!exists) nextInv.push(item as unknown as GameItem);
+            }
 
-      let next = { ...gameState };
-
-      // zona actual: buscamos por id dentro de next.zones
-      if (ap.current_zone_id) {
-        const found = next.zones.find((z) => z.id === ap.current_zone_id);
-        if (found) {
-          next.current_zone = found;
+            nextCharacter = { ...nextCharacter, inventory: nextInv };
+          }
         }
+
+        // Esto actualiza UI + persiste
+        updateCharacter(nextCharacter);
       }
 
-      // zonas exploradas: agregamos sin duplicar
-      if (ap.explored_zones_add && ap.explored_zones_add.length > 0) {
-        const previous = next.explored_zones ?? [];
-        const merged = new Set([...previous, ...ap.explored_zones_add]);
-        next.explored_zones = Array.from(merged);
-      }
+      // 2) Cambios de aventura / mundo
+      if (patch.adventure_patch) {
+        const ap = patch.adventure_patch;
+        let next = { ...gameState };
 
-      // Esto actualiza UI (mapa/turnos) + persiste en Supabase
-      updateGameState(next);
-    }
-  },
-  [currentCharacter, gameState, updateCharacter, updateGameState]
-);
+        if (typeof ap.tension === 'number') next.tension = ap.tension;
+        if (typeof ap.corruption === 'number') next.corruption = ap.corruption;
+
+        // zona actual
+        if (ap.current_zone_id) {
+          const found = next.zones.find((z) => z.id === ap.current_zone_id);
+          if (found) next.current_zone = found;
+        }
+
+        // zonas exploradas
+        if (ap.explored_zones_add && ap.explored_zones_add.length > 0) {
+          const previous = next.explored_zones ?? [];
+          const merged = new Set([...previous, ...ap.explored_zones_add]);
+          next.explored_zones = Array.from(merged);
+        }
+
+        updateGameState(next);
+      }
+    },
+    [currentCharacter, gameState, updateCharacter, updateGameState]
+  );
 
 
   const handleAction = (actionId: string) => {
@@ -605,6 +632,11 @@ const updateGameState = useCallback(
                 </Button>
               </SheetTrigger>
               <SheetContent className="w-[340px] p-4 overflow-y-auto">
+                <SheetHeader className="sr-only">
+                  <SheetTitle>Panel lateral</SheetTitle>
+                  <SheetDescription>Acceso a personaje, inventario, mapa y combate.</SheetDescription>
+                </SheetHeader>
+
                 <Tabs value={activePanel} onValueChange={(v) => setActivePanel(v as SidePanel)}>
                   <TabsList className="w-full grid grid-cols-4 h-10 mb-4">
                     <TabsTrigger value="character" className="text-xs">
@@ -623,7 +655,7 @@ const updateGameState = useCallback(
 
                   <TabsContent value="character" className="space-y-4 m-0">
                     {currentCharacter && (
-                      <CharacterSheet character={currentCharacter} />
+                      <CharacterSheet character={currentCharacter} tension={gameState.tension} />
                     )}
                     <DiceRoller onRoll={handleDiceRoll} character={currentCharacter} />
                   </TabsContent>

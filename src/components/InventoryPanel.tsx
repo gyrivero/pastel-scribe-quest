@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import { GameItem, Character } from '@/types/game';
 import { Card } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -25,6 +25,17 @@ interface InventoryPanelProps {
 
 export function InventoryPanel({ character, onUseItem, onEquipItem, onClose }: InventoryPanelProps) {
   const [selectedItem, setSelectedItem] = useState<GameItem | null>(null);
+
+  // Mantener el item seleccionado sincronizado si el inventario cambia (DM/uso/consumo)
+  useEffect(() => {
+    if (!selectedItem) return;
+    const fresh = character.inventory?.find((i) => i.id === selectedItem.id);
+    if (!fresh) {
+      setSelectedItem(null);
+    } else if (fresh !== selectedItem) {
+      setSelectedItem(fresh);
+    }
+  }, [character.inventory, selectedItem]);
 
   const getItemsByType = (type: GameItem['type']) => {
     return character.inventory?.filter(item => item.type === type) || [];
