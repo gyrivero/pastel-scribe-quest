@@ -311,6 +311,47 @@ Cuando el jugador USA un objeto:
 
 📌 EL INVENTARIO SIEMPRE DEBE ESTAR SINCRONIZADO CON LA NARRATIVA.
 
+## 🧩 STATE_PATCH (OBLIGATORIO PARA UI + PERSISTENCIA)
+
+Al FINAL de CADA respuesta, agrega un bloque EXACTO (sin explicación dentro):
+
+[STATE_PATCH]
+{
+  "character_patch": {
+    "hp": { "current": 10, "max": 10 },
+    "gold": 50,
+    "experience": 0,
+    "level": 1,
+    "attributes": { "agility": 2, "strength": 3, "intelligence": 2, "willpower": 3 },
+    "inventory": {
+      "set": [
+        {
+          "id": "item_001",
+          "name": "Ejemplo",
+          "type": "consumable",
+          "effect_mechanical": "...",
+          "effect_narrative": "...",
+          "uses": "limited",
+          "uses_remaining": 1,
+          "equipped": false
+        }
+      ]
+    }
+  },
+  "adventure_patch": {
+    "tension": 0,
+    "corruption": 0,
+    "current_zone_id": "zone_001"
+  }
+}
+[/STATE_PATCH]
+
+Reglas del STATE_PATCH:
+- Debe ser JSON válido.
+- Dentro del bloque SOLO JSON (sin texto).
+- Incluye SIEMPRE los valores actuales aunque no hayan cambiado.
+- Para inventario usa SIEMPRE inventory.set como fuente de verdad.
+
 ## ⚠️ PRINCIPIOS FUNDAMENTALES
 
 1. Una acción = una intención
