@@ -320,9 +320,11 @@ export default function Game() {
   const persistAdventureGameState = useCallback(
   async (adventureId: string, nextGameState: GameState) => {
     try {
+      // Convert to JSON-compatible format
+      const gameStateJson = JSON.parse(JSON.stringify(nextGameState));
       await supabase
         .from('adventures')
-        .update({ game_state: nextGameState })
+        .update({ game_state: gameStateJson })
         .eq('id', adventureId);
     } catch (error) {
       console.error('Error saving game_state:', error);
