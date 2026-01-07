@@ -14,6 +14,7 @@ interface ChatInterfaceProps {
   messages: ChatMessage[];
   onMessagesUpdate: (messages: ChatMessage[]) => void;
   lastDiceRoll?: DiceRoll | null;
+  onStatePatch?: (patch: unknown, rawAssistantText: string) => void;
 }
 
 export function ChatInterface({ 
@@ -21,7 +22,8 @@ export function ChatInterface({
   adventure, 
   messages, 
   onMessagesUpdate,
-  lastDiceRoll 
+  lastDiceRoll, 
+  onStatePatch
 }: ChatInterfaceProps) {
   const [input, setInput] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -32,6 +34,30 @@ export function ChatInterface({
       scrollRef.current.scrollTop = scrollRef.current.scrollHeight;
     }
   }, [messages]);
+
+
+  function extractStatePatch(text: string): { patch: unknown; cleanedText: string } | null {
+  const startTag = '[STATE_PATCH]';
+  const endTag = '[/STATE_PATCH]';
+
+  const start = text.indexOf(startTag);
+  const end = text.indexOf(endTag);
+
+  if (start === -1 || end === -1) return null;
+
+  const jsonStr = text.slice(start + startTag.length, end).trim();
+
+  try {
+    const patch = JSON.parse(jsonStr);
+
+    // Esto borra el bloque del texto para que no se vea en el chat
+    const cleanedText = (text.slice(0, start) + text.slice(end + endTag.length)).trim();
+
+    return { patch, cleanedText };
+  } catch {
+    return null;
+  }
+}
 
   const sendMessage = async () => {
     if (!input.trim() || isLoading) return;
@@ -120,6 +146,22 @@ export function ChatInterface({
           }
         }
       }
+    // Cuando terminó el streaming, intentamos extraer STATE_PATCH del texto final
+const extracted = extractStatePatch(assistantContent);
+
+if (extracted) {
+  // 1) Reemplazamos el último mensaje del assistant por el texto limpio (sin tags)
+  onMessagesUpdate([
+    ...updatedMessages,
+    { role: 'assistant', content: extracted.cleanedText },
+  ]);
+
+  // 2) Avisamos al padre (Game.tsx) para que aplique el patch
+  if (onStatePatch) {
+    onStatePatch(extracted.patch, assistantContent);
+  }
+}
+
     } catch (error) {
       console.error('Chat error:', error);
       toast.error('Error al comunicarse con el Dungeon Master');
