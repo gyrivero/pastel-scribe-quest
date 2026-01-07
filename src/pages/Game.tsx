@@ -69,6 +69,7 @@ export default function Game() {
   const [adventures, setAdventures] = useState<Adventure[]>([]);
   const [currentCharacter, setCurrentCharacter] = useState<Character | null>(null);
   const [currentAdventure, setCurrentAdventure] = useState<Adventure | null>(null);
+  const [gameState, setGameState] = useState<GameState>(createDefaultGameState());
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [lastDiceRoll, setLastDiceRoll] = useState<DiceRoll | null>(null);
   const [loading, setLoading] = useState(true);
@@ -238,6 +239,7 @@ export default function Game() {
   const continueAdventure = async (adventure: Adventure) => {
     const character = characters.find(c => c.id === adventure.character_id);
     setCurrentAdventure(adventure);
+    setGameState(adventure.game_state);
     setCurrentCharacter(character || null);
     
     // Load story logs
@@ -313,6 +315,42 @@ export default function Game() {
       console.error('Error persisting character:', error);
     }
   }, []);
+
+  const persistAdventureGameState = useCallback(
+  async (adventureId: string, nextGameState: GameState) => {
+    try {
+      await supabase
+        .from('adventures')
+        .update({ game_state: nextGameState })
+        .eq('id', adventureId);
+    } catch (error) {
+      console.error('Error saving game_state:', error);
+    }
+  },
+  []
+);
+
+const updateGameState = useCallback(
+  (nextGameState: GameState) => {
+    setGameState(nextGameState);
+
+    if (currentAdventure) {
+      const updatedAdventure = {
+        ...currentAdventure,
+        game_state: nextGameState,
+      };
+
+      setCurrentAdventure(updatedAdventure);
+      setAdventures(prev =>
+        prev.map(a => (a.id === updatedAdventure.id ? updatedAdventure : a))
+      );
+
+      persistAdventureGameState(updatedAdventure.id, nextGameState);
+    }
+  },
+  [currentAdventure, persistAdventureGameState]
+);
+
 
   // Update character and persist
   const updateCharacter = useCallback((updatedCharacter: Character) => {
@@ -440,7 +478,6 @@ export default function Game() {
   }
 
   if (view === 'playing') {
-    const gameState = currentAdventure?.game_state || createDefaultGameState();
 
     return (
       <div className="min-h-screen flex flex-col bg-background">
