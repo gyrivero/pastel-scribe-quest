@@ -374,9 +374,10 @@ const updateGameState = useCallback(
         // Ajustalo a los campos reales de tu tipo Character.
         nextCharacter = {
           ...nextCharacter,
-          hp_current: cp.hp.current ?? nextCharacter.hp_current,
-          hp_max: cp.hp.max ?? nextCharacter.hp_max,
+          health: cp.hp.current ?? nextCharacter.health,
+          max_health: cp.hp.max ?? nextCharacter.max_health,
         };
+
       }
 
       // Inventario
